@@ -3,7 +3,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 
 interface ComponentNodeData {
   label: string;
-  type: 'element' | 'manipulator' | 'worker' | 'helper' | 'auditor' | 'enforcer';
+  type: 'element' | 'manipulator' | 'worker' | 'helper' | 'auditor' | 'enforcer' | 'workflow';
   status?: 'draft' | 'ready' | 'error';
   description?: string;
   locked?: boolean;
@@ -51,6 +51,13 @@ const nodeStyles = {
     text: 'text-red-900',
     icon: '✅',
     displayName: 'Enforcer',
+  },
+  workflow: {
+    bg: 'bg-pink-50',
+    border: 'border-pink-400',
+    text: 'text-pink-900',
+    icon: '🔄',
+    displayName: 'Workflow',
   },
 };
 

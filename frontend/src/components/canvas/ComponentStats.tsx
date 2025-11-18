@@ -10,6 +10,7 @@ export function ComponentStats({ components }: ComponentStatsProps) {
     helper: components.filter((c) => c.type === 'helper').length,
     auditor: components.filter((c) => c.type === 'auditor').length,
     enforcer: components.filter((c) => c.type === 'enforcer').length,
+    workflow: components.filter((c) => c.type === 'workflow').length,
   };
 
   const total = components.length;
@@ -56,6 +57,33 @@ export function ComponentStats({ components }: ComponentStatsProps) {
               <span className="text-gray-600">Helpers</span>
             </span>
             <span className="font-semibold text-yellow-600">{stats.helper}</span>
+          </div>
+        )}
+        {stats.auditor > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center space-x-2">
+              <span>📋</span>
+              <span className="text-gray-600">Auditors</span>
+            </span>
+            <span className="font-semibold text-green-600">{stats.auditor}</span>
+          </div>
+        )}
+        {stats.enforcer > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center space-x-2">
+              <span>✅</span>
+              <span className="text-gray-600">Enforcers</span>
+            </span>
+            <span className="font-semibold text-red-600">{stats.enforcer}</span>
+          </div>
+        )}
+        {stats.workflow > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center space-x-2">
+              <span>🔄</span>
+              <span className="text-gray-600">Workflows</span>
+            </span>
+            <span className="font-semibold text-pink-600">{stats.workflow}</span>
           </div>
         )}
         <div className="border-t pt-2">

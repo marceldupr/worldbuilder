@@ -1,0 +1,170 @@
+/**
+ * {{name}} - Workflow Orchestrator
+ * {{description}}
+ */
+
+interface WorkflowContext {
+  userId?: string;
+  data: any;
+  results: Map<string, any>;
+  errors: Error[];
+}
+
+interface WorkflowStep {
+  name: string;
+  execute: (context: WorkflowContext) => Promise<any>;
+  onError?: 'retry' | 'skip' | 'abort';
+  timeout?: number;
+}
+
+export class {{pascalCase name}} {
+  private steps: WorkflowStep[] = [];
+
+  constructor(
+    // Inject dependencies here
+    private dependencies: any = {}
+  ) {
+    this.initializeSteps();
+  }
+
+  /**
+   * Initialize workflow steps
+   */
+  private initializeSteps(): void {
+{{#each steps}}
+    // Step {{add @index 1}}: {{name}}
+    this.steps.push({
+      name: '{{name}}',
+      execute: this.execute{{pascalCase name}}.bind(this),
+      onError: '{{onError}}' || 'abort',
+      timeout: {{timeout}} || 30000,
+    });
+
+{{/each}}
+  }
+
+{{#each steps}}
+  /**
+   * Step {{add @index 1}}: {{description}}
+   {{#if component}}
+   * Component: {{component}}
+   * Action: {{action}}
+   {{/if}}
+   */
+  private async execute{{pascalCase name}}(context: WorkflowContext): Promise<any> {
+    try {
+      // TODO: Implement step logic
+      {{#if component}}
+      // Call {{component}}.{{action}}(context.data)
+      const result = await this.call{{pascalCase component}}{{pascalCase action}}(context);
+      {{else}}
+      // Custom step logic here
+      const result = { success: true };
+      {{/if}}
+
+      context.results.set('{{name}}', result);
+      return result;
+    } catch (error) {
+      console.error('Error in step {{name}}:', error);
+      context.errors.push(error as Error);
+      throw error;
+    }
+  }
+
+{{/each}}
+
+  /**
+   * Execute the complete workflow
+   */
+  async execute(input: any, userId?: string): Promise<{
+    success: boolean;
+    results: any;
+    errors: Error[];
+  }> {
+    const context: WorkflowContext = {
+      userId,
+      data: input,
+      results: new Map(),
+      errors: [],
+    };
+
+    console.log('🔄 Starting workflow: {{name}}');
+
+    for (const [index, step] of this.steps.entries()) {
+      try {
+        console.log(`  Step ${index + 1}/${this.steps.length}: ${step.name}`);
+        
+        const timeoutPromise = step.timeout
+          ? new Promise((_, reject) =>
+              setTimeout(() => reject(new Error(`Step ${step.name} timed out`)), step.timeout)
+            )
+          : null;
+
+        const result = timeoutPromise
+          ? await Promise.race([step.execute(context), timeoutPromise])
+          : await step.execute(context);
+
+        console.log(`  ✅ ${step.name} completed`);
+      } catch (error) {
+        console.error(`  ❌ ${step.name} failed:`, error);
+        
+        if (step.onError === 'skip') {
+          console.log(`  ⏭️  Skipping ${step.name} and continuing`);
+          continue;
+        } else if (step.onError === 'retry') {
+          console.log(`  🔄 Retrying ${step.name}...`);
+          try {
+            await step.execute(context);
+            console.log(`  ✅ ${step.name} succeeded on retry`);
+          } catch (retryError) {
+            console.error(`  ❌ ${step.name} failed on retry`);
+            return {
+              success: false,
+              results: Object.fromEntries(context.results),
+              errors: context.errors,
+            };
+          }
+        } else {
+          // abort
+          console.log(`  🛑 Aborting workflow`);
+          return {
+            success: false,
+            results: Object.fromEntries(context.results),
+            errors: context.errors,
+          };
+        }
+      }
+    }
+
+    console.log('✅ Workflow completed successfully');
+    return {
+      success: true,
+      results: Object.fromEntries(context.results),
+      errors: context.errors,
+    };
+  }
+
+  /**
+   * Rollback the workflow (if supported)
+   */
+  async rollback(context: WorkflowContext): Promise<void> {
+    console.log('🔙 Rolling back workflow...');
+    // TODO: Implement rollback logic for each step
+  }
+
+{{#each steps}}
+{{#if component}}
+  /**
+   * Helper: Call {{component}}.{{action}}
+   */
+  private async call{{pascalCase component}}{{pascalCase action}}(context: WorkflowContext): Promise<any> {
+    // TODO: Implement actual component call
+    // const {{camelCase component}} = this.dependencies.{{camelCase component}};
+    // return await {{camelCase component}}.{{action}}(context.data);
+    return { success: true };
+  }
+
+{{/if}}
+{{/each}}
+}
+

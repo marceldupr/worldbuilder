@@ -30,6 +30,8 @@ export function ManipulatorModal({
     update: 'authenticated',
     delete: 'authenticated',
   });
+  const [enableFileUpload, setEnableFileUpload] = useState(false);
+  const [uploadFields, setUploadFields] = useState('images');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -69,6 +71,12 @@ export function ManipulatorModal({
         operations,
         authentication,
         endpoints: generateEndpoints(selectedElement.name),
+        fileUpload: enableFileUpload ? {
+          enabled: true,
+          fields: uploadFields.split(',').map(f => f.trim()),
+          maxSize: 10 * 1024 * 1024, // 10MB
+          allowedTypes: ['image/*', 'application/pdf'],
+        } : null,
       };
 
       const component = await componentsApi.create({
@@ -198,6 +206,48 @@ export function ManipulatorModal({
             <p className="mt-1 text-xs text-gray-500">
               The data entity this API will expose
             </p>
+          </div>
+
+          {/* File Upload */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                File Upload Support
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={enableFileUpload}
+                  onChange={(e) => setEnableFileUpload(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-sm text-gray-700">Enable uploads</span>
+              </label>
+            </div>
+            
+            {enableFileUpload && (
+              <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3">
+                <label className="block text-xs font-medium text-indigo-900 mb-1">
+                  Upload Fields (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={uploadFields}
+                  onChange={(e) => setUploadFields(e.target.value)}
+                  placeholder="images, documents, avatar"
+                  className="block w-full rounded-md border border-indigo-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                />
+                <p className="mt-2 text-xs text-indigo-700">
+                  ✓ Generates upload endpoints: POST /{elements.find((e) => e.id === linkedElement)?.name.toLowerCase()}/upload
+                  <br />
+                  ✓ Handles multipart/form-data
+                  <br />
+                  ✓ Integrates with Storage Helper
+                  <br />
+                  ✓ Max 10MB per file
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Operations */}

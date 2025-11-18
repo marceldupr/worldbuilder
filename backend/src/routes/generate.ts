@@ -10,7 +10,7 @@ const openai = new OpenAI({
 });
 
 const GenerateSchemaSchema = z.object({
-  componentType: z.enum(['element', 'manipulator', 'worker', 'helper', 'auditor', 'enforcer']),
+  componentType: z.enum(['element', 'manipulator', 'worker', 'helper', 'auditor', 'enforcer', 'workflow']),
   name: z.string().min(1),
   description: z.string().min(10),
 });
@@ -122,6 +122,23 @@ For an Enforcer component, generate a schema with:
   - description: what the rule does
   
 Focus on cross-component business logic, workflow enforcement, and permission rules.`,
+
+    workflow: `${basePrompt}
+
+For a Workflow component, generate a schema with:
+- trigger: how the workflow starts (http, event, schedule, manual)
+- steps: ordered array of workflow steps
+- Each step should have:
+  - name: step identifier
+  - description: what happens
+  - component: which component to use (Element, Helper, Worker, etc)
+  - action: what action to call
+  - onError: what to do if step fails (retry, skip, abort)
+  - timeout: optional timeout
+- errorHandling: object mapping error types to responses
+- rollback: optional rollback strategy
+
+Generate a complete multi-step workflow that orchestrates the described process.`,
   };
 
   return typePrompts[componentType] || basePrompt;

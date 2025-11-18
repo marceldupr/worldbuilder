@@ -21,6 +21,7 @@ import { WorkerModal } from '../components/modals/WorkerModal';
 import { HelperModal } from '../components/modals/HelperModal';
 import { AuditorModal } from '../components/modals/AuditorModal';
 import { EnforcerModal } from '../components/modals/EnforcerModal';
+import { WorkflowModal } from '../components/modals/WorkflowModal';
 import { CodePreviewModal } from '../components/modals/CodePreviewModal';
 import { GitHubPushModal } from '../components/modals/GitHubPushModal';
 import { RelationshipModal } from '../components/modals/RelationshipModal';
@@ -49,6 +50,7 @@ function CanvasContent() {
   const [showHelperModal, setShowHelperModal] = useState(false);
   const [showAuditorModal, setShowAuditorModal] = useState(false);
   const [showEnforcerModal, setShowEnforcerModal] = useState(false);
+  const [showWorkflowModal, setShowWorkflowModal] = useState(false);
   const [showCodePreview, setShowCodePreview] = useState(false);
   const [showGitHubPush, setShowGitHubPush] = useState(false);
   const [showRelationshipModal, setShowRelationshipModal] = useState(false);
@@ -217,6 +219,8 @@ function CanvasContent() {
         setShowAuditorModal(true);
       } else if (type === 'enforcer') {
         setShowEnforcerModal(true);
+      } else if (type === 'workflow') {
+        setShowWorkflowModal(true);
       }
     },
     [project]
@@ -260,6 +264,8 @@ function CanvasContent() {
             setShowAuditorModal(true);
           } else if (component.type === 'enforcer') {
             setShowEnforcerModal(true);
+          } else if (component.type === 'workflow') {
+            setShowWorkflowModal(true);
           }
         } catch (error: any) {
           showToast(error.message || 'Failed to load component', 'error');
@@ -300,8 +306,40 @@ function CanvasContent() {
     setShowHelperModal(false);
     setShowAuditorModal(false);
     setShowEnforcerModal(false);
+    setShowWorkflowModal(false);
     setEditingComponent(null);
   };
+
+  const handleDeleteNode = useCallback(async () => {
+    const selectedNodes = nodes.filter((n) => n.selected);
+    if (selectedNodes.length === 0) return;
+
+    const confirmDelete = confirm(
+      `Delete ${selectedNodes.length} component${selectedNodes.length > 1 ? 's' : ''}?\n\n` +
+      `This will permanently delete:\n${selectedNodes.map(n => `• ${n.data.label}`).join('\n')}\n\n` +
+      `This action cannot be undone.`
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      // Delete from backend
+      for (const node of selectedNodes) {
+        await componentsApi.delete(node.id);
+      }
+
+      // Remove from canvas
+      setNodes((nds: Node[]) => nds.filter((n) => !n.selected));
+      setEdges((eds: Edge[]) =>
+        eds.filter((e) => !selectedNodes.some((n) => e.source === n.id || e.target === n.id))
+      );
+
+      showToast(`Deleted ${selectedNodes.length} component${selectedNodes.length > 1 ? 's' : ''}`, 'success');
+      setSelectedNodeId(null);
+    } catch (error: any) {
+      showToast(error.message || 'Failed to delete component', 'error');
+    }
+  }, [nodes, setNodes, setEdges]);
 
   // Keyboard shortcuts
   useKeyboardShortcuts([
@@ -321,6 +359,16 @@ function CanvasContent() {
         showToast('Canvas saved!', 'success');
       },
       description: 'Save',
+    },
+    {
+      key: 'Delete',
+      handler: handleDeleteNode,
+      description: 'Delete selected component(s)',
+    },
+    {
+      key: 'Backspace',
+      handler: handleDeleteNode,
+      description: 'Delete selected component(s)',
     },
   ]);
 
@@ -398,6 +446,7 @@ function CanvasContent() {
               { name: 'Helper', icon: '🔧', color: 'bg-yellow-100', type: 'helper' },
               { name: 'Auditor', icon: '📋', color: 'bg-green-100', type: 'auditor' },
               { name: 'Enforcer', icon: '✅', color: 'bg-red-100', type: 'enforcer' },
+              { name: 'Workflow', icon: '🔄', color: 'bg-pink-100', type: 'workflow' },
             ].map((component) => (
               <div
                 key={component.name}
@@ -461,16 +510,40 @@ function CanvasContent() {
                 <h3 className="text-sm font-semibold text-gray-900">
                   Component Details
                 </h3>
-                <button
-                  onClick={() => setSelectedNodeId(null)}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Clear
-                </button>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={async () => {
+                      const node = nodes.find(n => n.id === selectedNodeId);
+                      if (!node) return;
+                      
+                      const confirmDelete = confirm(`Delete ${node.data.label}?\n\nThis action cannot be undone.`);
+                      if (!confirmDelete) return;
+
+                      try {
+                        await componentsApi.delete(selectedNodeId);
+                        setNodes((nds: Node[]) => nds.filter((n) => n.id !== selectedNodeId));
+                        setEdges((eds: Edge[]) => eds.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId));
+                        showToast('Component deleted', 'success');
+                        setSelectedNodeId(null);
+                      } catch (error: any) {
+                        showToast(error.message || 'Failed to delete', 'error');
+                      }
+                    }}
+                    className="text-xs text-red-600 hover:text-red-700 font-medium"
+                  >
+                    🗑️ Delete
+                  </button>
+                  <button
+                    onClick={() => setSelectedNodeId(null)}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Clear
+                  </button>
+                </div>
               </div>
               <ComponentDetails nodeId={selectedNodeId} nodes={nodes} />
               <p className="mt-3 text-xs text-gray-500 text-center">
-                💡 Double-click to edit
+                💡 Double-click to edit · Press Delete to remove
               </p>
             </div>
           )}
@@ -548,6 +621,15 @@ function CanvasContent() {
 
       {showEnforcerModal && projectId && (
         <EnforcerModal
+          projectId={projectId}
+          position={dropPosition}
+          onClose={closeEditModal}
+          onSuccess={editingComponent ? handleComponentUpdated : handleElementCreated}
+        />
+      )}
+
+      {showWorkflowModal && projectId && (
+        <WorkflowModal
           projectId={projectId}
           position={dropPosition}
           onClose={closeEditModal}
