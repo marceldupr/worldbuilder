@@ -119,6 +119,7 @@ export const generateApi = {
     componentType: string;
     name: string;
     description: string;
+    projectId?: string;
   }) =>
     fetchWithAuth('/api/generate/schema', {
       method: 'POST',

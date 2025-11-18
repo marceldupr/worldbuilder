@@ -19,12 +19,28 @@ const GenerateSchemaSchema = z.object({
 router.post('/schema', async (req: AuthRequest, res) => {
   try {
     console.log('[Generate] Schema generation request:', req.body);
-    const { componentType, name, description } = GenerateSchemaSchema.parse(req.body);
+    const data = GenerateSchemaSchema.parse(req.body);
+    const { componentType, name, description, projectId } = data as any;
 
     console.log('[Generate] Type:', componentType, 'Name:', name);
     
+    // Load existing components for context
+    let availableComponents: any[] = [];
+    if (projectId) {
+      try {
+        const project = await prisma.project.findUnique({
+          where: { id: projectId },
+          include: { components: true },
+        });
+        availableComponents = project?.components || [];
+        console.log('[Generate] Found', availableComponents.length, 'existing components for context');
+      } catch (error) {
+        console.warn('[Generate] Could not load project components:', error);
+      }
+    }
+    
     const systemPrompt = getSystemPrompt(componentType);
-    const userPrompt = getUserPrompt(componentType, name, description);
+    const userPrompt = getUserPrompt(componentType, name, description, availableComponents);
 
     console.log('[Generate] Calling OpenAI...');
     const completion = await openai.chat.completions.create({
@@ -144,13 +160,40 @@ Generate a complete multi-step workflow that orchestrates the described process.
   return typePrompts[componentType] || basePrompt;
 }
 
-function getUserPrompt(componentType: string, name: string, description: string): string {
-  return `Generate a ${componentType} component schema for:
+function getUserPrompt(componentType: string, name: string, description: string, availableComponents: any[] = []): string {
+  let prompt = `Generate a ${componentType} component schema for:
 
 Name: ${name}
 Description: ${description}
+`;
 
-Return a JSON schema that follows the structure defined in the system prompt.`;
+  // Add context about available components for better integration
+  if (availableComponents.length > 0) {
+    prompt += `\nAvailable components in this project:\n`;
+    availableComponents.forEach((comp) => {
+      prompt += `- ${comp.name} (${comp.type})`;
+      if (comp.schema) {
+        // Include key details
+        if (comp.type === 'element' && comp.schema.properties) {
+          const fields = comp.schema.properties.map((p: any) => p.name).slice(0, 5).join(', ');
+          prompt += ` - Fields: ${fields}`;
+        }
+        if (comp.type === 'helper' && comp.schema.integration) {
+          prompt += ` - Integration: ${comp.schema.integration}`;
+        }
+      }
+      prompt += '\n';
+    });
+
+    // Add specific guidance based on component type
+    if (['worker', 'workflow', 'enforcer', 'auditor'].includes(componentType)) {
+      prompt += `\nIMPORTANT: Reference and integrate with the existing components listed above. Generate specific logic that uses these actual components by name, not generic placeholders.`;
+    }
+  }
+
+  prompt += `\nReturn a JSON schema that follows the structure defined in the system prompt.`;
+  
+  return prompt;
 }
 
 // POST /api/generate/test-data - Generate test data for component

@@ -8,7 +8,7 @@ const router = Router();
 
 const CreateComponentSchema = z.object({
   projectId: z.string().uuid(),
-  type: z.enum(['element', 'manipulator', 'worker', 'helper', 'auditor', 'enforcer', 'workflow']),
+  type: z.enum(['element', 'manipulator', 'worker', 'helper', 'auth', 'auditor', 'enforcer', 'workflow']),
   name: z.string().min(1).max(100),
   description: z.string().optional(),
   schema: z.any(),

@@ -81,6 +81,7 @@ export function EnforcerModal({
         componentType: 'enforcer',
         name: name.trim(),
         description: description.trim(),
+        projectId,
       });
 
       setSchema(result.schema);

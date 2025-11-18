@@ -22,6 +22,7 @@ import { HelperModal } from '../components/modals/HelperModal';
 import { AuditorModal } from '../components/modals/AuditorModal';
 import { EnforcerModal } from '../components/modals/EnforcerModal';
 import { WorkflowModal } from '../components/modals/WorkflowModal';
+import { AuthModal } from '../components/modals/AuthModal';
 import { CodePreviewModal } from '../components/modals/CodePreviewModal';
 import { GitHubPushModal } from '../components/modals/GitHubPushModal';
 import { RelationshipModal } from '../components/modals/RelationshipModal';
@@ -51,6 +52,7 @@ function CanvasContent() {
   const [showAuditorModal, setShowAuditorModal] = useState(false);
   const [showEnforcerModal, setShowEnforcerModal] = useState(false);
   const [showWorkflowModal, setShowWorkflowModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCodePreview, setShowCodePreview] = useState(false);
   const [showGitHubPush, setShowGitHubPush] = useState(false);
   const [showRelationshipModal, setShowRelationshipModal] = useState(false);
@@ -221,6 +223,8 @@ function CanvasContent() {
         setShowEnforcerModal(true);
       } else if (type === 'workflow') {
         setShowWorkflowModal(true);
+      } else if (type === 'auth') {
+        setShowAuthModal(true);
       }
     },
     [project]
@@ -266,6 +270,8 @@ function CanvasContent() {
             setShowEnforcerModal(true);
           } else if (component.type === 'workflow') {
             setShowWorkflowModal(true);
+          } else if (component.type === 'auth') {
+            setShowAuthModal(true);
           }
         } catch (error: any) {
           showToast(error.message || 'Failed to load component', 'error');
@@ -307,6 +313,7 @@ function CanvasContent() {
     setShowAuditorModal(false);
     setShowEnforcerModal(false);
     setShowWorkflowModal(false);
+    setShowAuthModal(false);
     setEditingComponent(null);
   };
 
@@ -444,6 +451,7 @@ function CanvasContent() {
               { name: 'Data API', icon: '🌐', color: 'bg-indigo-100', type: 'manipulator' },
               { name: 'Worker', icon: '⚙️', color: 'bg-purple-100', type: 'worker' },
               { name: 'Helper', icon: '🔧', color: 'bg-yellow-100', type: 'helper' },
+              { name: 'Auth', icon: '🔐', color: 'bg-cyan-100', type: 'auth' },
               { name: 'Auditor', icon: '📋', color: 'bg-green-100', type: 'auditor' },
               { name: 'Enforcer', icon: '✅', color: 'bg-red-100', type: 'enforcer' },
               { name: 'Workflow', icon: '🔄', color: 'bg-pink-100', type: 'workflow' },
@@ -630,6 +638,15 @@ function CanvasContent() {
 
       {showWorkflowModal && projectId && (
         <WorkflowModal
+          projectId={projectId}
+          position={dropPosition}
+          onClose={closeEditModal}
+          onSuccess={editingComponent ? handleComponentUpdated : handleElementCreated}
+        />
+      )}
+
+      {showAuthModal && projectId && (
+        <AuthModal
           projectId={projectId}
           position={dropPosition}
           onClose={closeEditModal}

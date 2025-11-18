@@ -62,6 +62,7 @@ export function WorkflowModal({
         componentType: 'workflow',
         name: name.trim(),
         description: `Trigger: ${triggerType}. Flow: ${description.trim()}`,
+        projectId,
       });
 
       setSchema(result.schema);

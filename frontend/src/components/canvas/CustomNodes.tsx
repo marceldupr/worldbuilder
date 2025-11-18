@@ -3,7 +3,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 
 interface ComponentNodeData {
   label: string;
-  type: 'element' | 'manipulator' | 'worker' | 'helper' | 'auditor' | 'enforcer' | 'workflow';
+  type: 'element' | 'manipulator' | 'worker' | 'helper' | 'auth' | 'auditor' | 'enforcer' | 'workflow';
   status?: 'draft' | 'ready' | 'error';
   description?: string;
   locked?: boolean;
@@ -37,6 +37,13 @@ const nodeStyles = {
     text: 'text-yellow-900',
     icon: '🔧',
     displayName: 'Helper',
+  },
+  auth: {
+    bg: 'bg-cyan-50',
+    border: 'border-cyan-400',
+    text: 'text-cyan-900',
+    icon: '🔐',
+    displayName: 'Auth',
   },
   auditor: {
     bg: 'bg-green-50',

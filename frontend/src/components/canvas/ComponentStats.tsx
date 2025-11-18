@@ -8,6 +8,7 @@ export function ComponentStats({ components }: ComponentStatsProps) {
     manipulator: components.filter((c) => c.type === 'manipulator').length,
     worker: components.filter((c) => c.type === 'worker').length,
     helper: components.filter((c) => c.type === 'helper').length,
+    auth: components.filter((c) => c.type === 'auth').length,
     auditor: components.filter((c) => c.type === 'auditor').length,
     enforcer: components.filter((c) => c.type === 'enforcer').length,
     workflow: components.filter((c) => c.type === 'workflow').length,
@@ -57,6 +58,15 @@ export function ComponentStats({ components }: ComponentStatsProps) {
               <span className="text-gray-600">Helpers</span>
             </span>
             <span className="font-semibold text-yellow-600">{stats.helper}</span>
+          </div>
+        )}
+        {stats.auth > 0 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="flex items-center space-x-2">
+              <span>🔐</span>
+              <span className="text-gray-600">Auth</span>
+            </span>
+            <span className="font-semibold text-cyan-600">{stats.auth}</span>
           </div>
         )}
         {stats.auditor > 0 && (
