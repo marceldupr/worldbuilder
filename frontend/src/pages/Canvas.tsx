@@ -17,10 +17,15 @@ import { useCanvasStore } from '../stores/canvasStore';
 import { ComponentNode } from '../components/canvas/CustomNodes';
 import { ElementModal } from '../components/modals/ElementModal';
 import { ManipulatorModal } from '../components/modals/ManipulatorModal';
+import { WorkerModal } from '../components/modals/WorkerModal';
+import { HelperModal } from '../components/modals/HelperModal';
 import { CodePreviewModal } from '../components/modals/CodePreviewModal';
 import { GitHubPushModal } from '../components/modals/GitHubPushModal';
-import { Toaster } from '../components/ui/toast';
+import { Toaster, showToast } from '../components/ui/toast';
+import { KeyboardShortcutsHelp } from '../components/ui/KeyboardShortcutsHelp';
+import { ComponentStats } from '../components/canvas/ComponentStats';
 import { projectsApi } from '../lib/api';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const nodeTypes = {
   component: ComponentNode,
@@ -36,6 +41,8 @@ function CanvasContent() {
   
   const [showElementModal, setShowElementModal] = useState(false);
   const [showManipulatorModal, setShowManipulatorModal] = useState(false);
+  const [showWorkerModal, setShowWorkerModal] = useState(false);
+  const [showHelperModal, setShowHelperModal] = useState(false);
   const [showCodePreview, setShowCodePreview] = useState(false);
   const [showGitHubPush, setShowGitHubPush] = useState(false);
   const [projectName, setProjectName] = useState('');
@@ -129,8 +136,11 @@ function CanvasContent() {
         setShowElementModal(true);
       } else if (type === 'manipulator') {
         setShowManipulatorModal(true);
+      } else if (type === 'worker') {
+        setShowWorkerModal(true);
+      } else if (type === 'helper') {
+        setShowHelperModal(true);
       }
-      // Add other component types here later
     },
     [project]
   );
@@ -150,6 +160,27 @@ function CanvasContent() {
     addNode(newNode);
   };
 
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'g',
+      ctrl: true,
+      handler: () => {
+        if (nodes.length > 0) setShowCodePreview(true);
+      },
+      description: 'Generate code',
+    },
+    {
+      key: 's',
+      ctrl: true,
+      handler: () => {
+        // Canvas auto-saves, just show feedback
+        showToast('Canvas saved!', 'success');
+      },
+      description: 'Save',
+    },
+  ]);
+
   const onDragStart = (event: DragEvent, nodeType: string) => {
     event.dataTransfer.setData('application/reactflow', nodeType);
     event.dataTransfer.effectAllowed = 'move';
@@ -158,6 +189,7 @@ function CanvasContent() {
   return (
     <div className="flex h-screen flex-col">
       <Toaster />
+      <KeyboardShortcutsHelp />
       
       {/* Header */}
       <header className="border-b bg-white shadow-sm">
@@ -267,10 +299,38 @@ function CanvasContent() {
         {/* Properties panel */}
         <aside className="w-80 border-l bg-gray-50 p-4">
           <h3 className="mb-4 text-sm font-semibold text-gray-900">
-            Properties
+            Project Info
           </h3>
-          <div className="text-sm text-gray-600">
-            Select a component to view properties
+          
+          {projectName && (
+            <div className="mb-6 rounded-lg bg-white p-4 shadow-sm">
+              <h4 className="mb-1 font-semibold text-gray-900">{projectName}</h4>
+              <p className="text-xs text-gray-500">Project ID: {projectId?.slice(0, 8)}...</p>
+            </div>
+          )}
+
+          <ComponentStats components={nodes.map(n => ({ type: n.data.type }))} />
+          
+          <div className="mt-6">
+            <h3 className="mb-2 text-sm font-semibold text-gray-900">
+              Quick Actions
+            </h3>
+            <div className="space-y-2">
+              <button
+                onClick={() => setShowCodePreview(true)}
+                disabled={nodes.length === 0}
+                className="w-full rounded-lg bg-blue-50 p-3 text-left text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+              >
+                💻 Generate Code
+              </button>
+              <button
+                onClick={() => setShowGitHubPush(true)}
+                disabled={nodes.length === 0}
+                className="w-full rounded-lg bg-gray-50 p-3 text-left text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                🐙 Push to GitHub
+              </button>
+            </div>
           </div>
         </aside>
       </div>
@@ -290,6 +350,24 @@ function CanvasContent() {
           projectId={projectId}
           position={dropPosition}
           onClose={() => setShowManipulatorModal(false)}
+          onSuccess={handleElementCreated}
+        />
+      )}
+
+      {showWorkerModal && projectId && (
+        <WorkerModal
+          projectId={projectId}
+          position={dropPosition}
+          onClose={() => setShowWorkerModal(false)}
+          onSuccess={handleElementCreated}
+        />
+      )}
+
+      {showHelperModal && projectId && (
+        <HelperModal
+          projectId={projectId}
+          position={dropPosition}
+          onClose={() => setShowHelperModal(false)}
           onSuccess={handleElementCreated}
         />
       )}

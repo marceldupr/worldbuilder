@@ -147,11 +147,25 @@ export class CodeGeneratorService {
     const schema = component.schema;
     const name = component.name;
 
-    // TODO: Implement worker templates
-    files.push({
-      path: `src/workers/${templateHelpers.kebabCase(name)}.worker.ts`,
-      content: `// Worker: ${name}\n// TODO: Implement worker\n`,
-    });
+    try {
+      // Queue setup
+      const queueTemplate = await this.loadTemplate('worker/queue.ts.hbs');
+      const queueContent = this.compileTemplate(queueTemplate, { ...schema, name });
+      files.push({
+        path: `src/queues/${templateHelpers.kebabCase(name)}.queue.ts`,
+        content: queueContent,
+      });
+
+      // Worker processor
+      const processorTemplate = await this.loadTemplate('worker/processor.ts.hbs');
+      const processorContent = this.compileTemplate(processorTemplate, { ...schema, name });
+      files.push({
+        path: `src/workers/${templateHelpers.kebabCase(name)}.worker.ts`,
+        content: processorContent,
+      });
+    } catch (error) {
+      console.error(`Error generating worker files for ${name}:`, error);
+    }
 
     return files;
   }
@@ -164,10 +178,16 @@ export class CodeGeneratorService {
     const schema = component.schema;
     const name = component.name;
 
-    files.push({
-      path: `src/helpers/${templateHelpers.kebabCase(name)}.helper.ts`,
-      content: `// Helper: ${name}\n// TODO: Implement helper\n`,
-    });
+    try {
+      const serviceTemplate = await this.loadTemplate('helper/service.ts.hbs');
+      const serviceContent = this.compileTemplate(serviceTemplate, { ...schema, name });
+      files.push({
+        path: `src/helpers/${templateHelpers.kebabCase(name)}.helper.ts`,
+        content: serviceContent,
+      });
+    } catch (error) {
+      console.error(`Error generating helper files for ${name}:`, error);
+    }
 
     return files;
   }
@@ -212,6 +232,45 @@ datasource db {
    * Generate package.json
    */
   private async generatePackageJson(project: any): Promise<GeneratedFile> {
+    const hasWorkers = project.components.some((c: any) => c.type === 'worker');
+    const helpers = project.components.filter((c: any) => c.type === 'helper');
+    
+    // Detect which helper integrations are used
+    const hasEmail = helpers.some((h: any) => h.schema.integration === 'sendgrid');
+    const hasPayment = helpers.some((h: any) => h.schema.integration === 'stripe');
+    const hasSMS = helpers.some((h: any) => h.schema.integration === 'twilio');
+    const hasStorage = helpers.some((h: any) => h.schema.integration === 'supabase');
+
+    const dependencies: Record<string, string> = {
+      express: '^4.18.2',
+      '@prisma/client': '^5.7.1',
+      cors: '^2.8.5',
+      helmet: '^7.1.0',
+      dotenv: '^16.3.1',
+      zod: '^3.22.4',
+      winston: '^3.11.0',
+    };
+
+    // Add worker dependencies
+    if (hasWorkers) {
+      dependencies['bullmq'] = '^5.1.0';
+      dependencies['ioredis'] = '^5.3.2';
+    }
+
+    // Add helper dependencies
+    if (hasEmail) {
+      dependencies['@sendgrid/mail'] = '^7.7.0';
+    }
+    if (hasPayment) {
+      dependencies['stripe'] = '^14.10.0';
+    }
+    if (hasSMS) {
+      dependencies['twilio'] = '^4.20.0';
+    }
+    if (hasStorage) {
+      dependencies['@supabase/supabase-js'] = '^2.38.4';
+    }
+
     const pkg = {
       name: templateHelpers.kebabCase(project.name),
       version: '1.0.0',
@@ -225,16 +284,11 @@ datasource db {
         'db:push': 'prisma db push',
         'db:migrate': 'prisma migrate dev',
         test: 'vitest',
+        ...(hasWorkers && {
+          'worker:dev': 'tsx watch src/workers/*.worker.ts',
+        }),
       },
-      dependencies: {
-        express: '^4.18.2',
-        '@prisma/client': '^5.7.1',
-        cors: '^2.8.5',
-        helmet: '^7.1.0',
-        dotenv: '^16.3.1',
-        zod: '^3.22.4',
-        winston: '^3.11.0',
-      },
+      dependencies,
       devDependencies: {
         '@types/express': '^4.17.21',
         '@types/cors': '^2.8.17',

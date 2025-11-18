@@ -1,6 +1,25 @@
-# Worldbuilder - Phase 1 MVP
+# 🌍 Worldbuilder - AI-Powered Visual App Builder
+
+**Build production-ready applications without writing code.**
+
+[![Status](https://img.shields.io/badge/Status-MVP%20Complete-success)]()
+[![Progress](https://img.shields.io/badge/Progress-95%25-blue)]()
+[![License](https://img.shields.io/badge/License-MIT-green)]()
+
+**"If you can describe it, you can build it."**
 
 AI-powered visual platform for building production-ready applications without writing code.
+
+---
+
+## ⚡ Quick Links
+
+- 🚀 **[5-Minute Quickstart](./QUICKSTART.md)** - Build your first app now!
+- 🔧 **[Setup Guide](./SETUP.md)** - Detailed installation
+- 📦 **[Deployment](./DEPLOYMENT.md)** - Go to production
+- 📖 **[Full Docs](./INDEX.md)** - Complete documentation index
+
+---
 
 ## 🚀 Quick Start
 

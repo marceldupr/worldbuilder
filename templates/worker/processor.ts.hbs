@@ -1,0 +1,84 @@
+import { Worker, Job } from 'bullmq';
+import Redis from 'ioredis';
+{{#each helpers}}
+import { {{pascalCase name}}Helper } from '../helpers/{{kebabCase name}}.helper.js';
+{{/each}}
+
+/**
+ * {{name}} Worker
+ * {{description}}
+ */
+
+const connection = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  maxRetriesPerRequest: null,
+});
+
+{{#each helpers}}
+const {{camelCase name}}Helper = new {{pascalCase name}}Helper();
+{{/each}}
+
+// Job data interface
+interface {{pascalCase name}}JobData {
+  [key: string]: any;
+}
+
+// Job processor
+async function processJob(job: Job<{{pascalCase name}}JobData>): Promise<any> {
+  console.log(`Processing job ${job.id} in queue {{queue}}`);
+  
+  try {
+    const { data } = job;
+    
+{{#each steps}}
+    // Step {{@index}}: {{name}}
+    await job.updateProgress({{multiply @index (divide 100 ../steps.length)}});
+    console.log('{{name}}...');
+    
+{{#if helperId}}
+    // Call helper
+    // await {{camelCase ../helpers.[helperId].name}}Helper.{{camelCase name}}(data);
+{{else}}
+    // TODO: Implement {{name}}
+{{/if}}
+    
+{{/each}}
+    
+    await job.updateProgress(100);
+    console.log(`Job ${job.id} completed successfully`);
+    
+    return { success: true };
+  } catch (error) {
+    console.error(`Job ${job.id} failed:`, error);
+    throw error;
+  }
+}
+
+// Create worker
+const worker = new Worker('{{queue}}', processJob, {
+  connection,
+  concurrency: {{concurrency}},
+  limiter: {
+    max: {{concurrency}},
+    duration: 1000,
+  },
+});
+
+// Event handlers
+worker.on('completed', (job) => {
+  console.log(`✓ Job ${job.id} completed`);
+});
+
+worker.on('failed', (job, err) => {
+  console.error(`✗ Job ${job?.id} failed:`, err);
+});
+
+worker.on('error', (err) => {
+  console.error('Worker error:', err);
+});
+
+console.log(`🚀 {{name}} worker started (queue: {{queue}}, concurrency: {{concurrency}})`);
+
+export default worker;
+

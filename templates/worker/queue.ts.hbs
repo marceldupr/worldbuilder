@@ -1,0 +1,53 @@
+import { Queue } from 'bullmq';
+import Redis from 'ioredis';
+
+/**
+ * {{name}} Queue
+ * For adding jobs to be processed by {{name}} worker
+ */
+
+const connection = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  maxRetriesPerRequest: null,
+});
+
+export const {{camelCase name}}Queue = new Queue('{{queue}}', {
+  connection,
+  defaultJobOptions: {
+    attempts: {{retry.attempts}},
+    backoff: {
+      type: 'exponential',
+      delay: 2000,
+    },
+    removeOnComplete: {
+      count: 100, // Keep last 100 completed jobs
+      age: 24 * 3600, // Keep for 24 hours
+    },
+    removeOnFail: {
+      count: 500, // Keep last 500 failed jobs
+    },
+    timeout: {{timeout}},
+  },
+});
+
+// Health check
+export async function getQueueHealth() {
+  const [waiting, active, completed, failed] = await Promise.all([
+    {{camelCase name}}Queue.getWaitingCount(),
+    {{camelCase name}}Queue.getActiveCount(),
+    {{camelCase name}}Queue.getCompletedCount(),
+    {{camelCase name}}Queue.getFailedCount(),
+  ]);
+
+  return {
+    queue: '{{queue}}',
+    waiting,
+    active,
+    completed,
+    failed,
+  };
+}
+
+console.log(`📦 {{name}} queue initialized`);
+

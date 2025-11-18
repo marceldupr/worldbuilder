@@ -1,0 +1,134 @@
+/**
+ * {{name}}
+ * {{description}}
+ */
+
+{{#if (eq integration "sendgrid")}}
+import sgMail from '@sendgrid/mail';
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
+{{else if (eq integration "stripe")}}
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2023-10-16',
+});
+{{else if (eq integration "twilio")}}
+import twilio from 'twilio';
+
+const client = twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+{{else if (eq integration "supabase")}}
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_KEY || ''
+);
+{{/if}}
+
+export class {{pascalCase name}}Helper {
+{{#each methods}}
+  /**
+   * {{name}}
+   * @param {{parameters}}
+   * @returns {{returns}}
+   */
+  async {{camelCase name}}({{parameters}}): {{returns}} {
+{{#if (eq ../integration "sendgrid")}}
+{{#if (eq name "sendTransactional")}}
+    try {
+      await sgMail.send({
+        to,
+        from: process.env.FROM_EMAIL || '',
+        templateId: template,
+        dynamicTemplateData: data,
+      });
+      return true;
+    } catch (error) {
+      console.error('Email error:', error);
+      return false;
+    }
+{{else}}
+    // TODO: Implement {{name}}
+    throw new Error('Not implemented');
+{{/if}}
+{{else if (eq ../integration "stripe")}}
+{{#if (eq name "createPaymentIntent")}}
+    try {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Convert to cents
+        currency: currency || 'usd',
+      });
+      return paymentIntent;
+    } catch (error) {
+      console.error('Payment error:', error);
+      throw error;
+    }
+{{else if (eq name "confirmPayment")}}
+    try {
+      const paymentIntent = await stripe.paymentIntents.confirm(intentId);
+      return paymentIntent.status === 'succeeded';
+    } catch (error) {
+      console.error('Payment confirmation error:', error);
+      return false;
+    }
+{{else}}
+    // TODO: Implement {{name}}
+    throw new Error('Not implemented');
+{{/if}}
+{{else if (eq ../integration "supabase")}}
+{{#if (eq name "uploadFile")}}
+    try {
+      const { data: uploadData, error } = await supabase.storage
+        .from(bucket)
+        .upload(path, file);
+      
+      if (error) throw error;
+      
+      return this.getPublicUrl(bucket, path);
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    }
+{{else if (eq name "getPublicUrl")}}
+    const { data } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(path);
+    
+    return data.publicUrl;
+{{else}}
+    // TODO: Implement {{name}}
+    throw new Error('Not implemented');
+{{/if}}
+{{else if (eq ../integration "twilio")}}
+{{#if (eq name "sendSMS")}}
+    try {
+      await client.messages.create({
+        body: message,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to,
+      });
+      return true;
+    } catch (error) {
+      console.error('SMS error:', error);
+      return false;
+    }
+{{else}}
+    // TODO: Implement {{name}}
+    throw new Error('Not implemented');
+{{/if}}
+{{else}}
+    // TODO: Implement {{name}}
+    console.log('{{pascalCase ../name}}.{{name}} called');
+    throw new Error('Not implemented');
+{{/if}}
+  }
+
+{{/each}}
+}
+
+export default new {{pascalCase name}}Helper();
+

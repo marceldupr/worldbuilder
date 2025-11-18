@@ -90,5 +90,11 @@ export const templateHelpers = {
   or: (...args: any[]) => {
     return args.slice(0, -1).some(Boolean);
   },
+
+  // Math helpers
+  multiply: (a: number, b: number) => a * b,
+  divide: (a: number, b: number) => b !== 0 ? a / b : 0,
+  add: (a: number, b: number) => a + b,
+  subtract: (a: number, b: number) => a - b,
 };
 
