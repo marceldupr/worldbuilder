@@ -67,6 +67,9 @@ railway variables set SUPABASE_URL=https://xxx.supabase.co
 railway variables set SUPABASE_ANON_KEY=xxx
 railway variables set FRONTEND_URL=https://your-frontend.vercel.app
 
+# IMPORTANT: For DATABASE_URL, use Session mode (port 5432)
+# NOT Direct mode (IPv6) or Transaction mode (pooler)
+
 # Deploy
 railway up
 ```

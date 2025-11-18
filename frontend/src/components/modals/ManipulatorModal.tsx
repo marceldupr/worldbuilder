@@ -119,12 +119,12 @@ export function ManipulatorModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
           <h2 className="mb-4 text-xl font-bold text-gray-900">
-            Create API (Manipulator) 🌐
+            Create Data API 🌐
           </h2>
           <div className="rounded-lg bg-yellow-50 p-4">
             <p className="text-sm text-yellow-800">
               ⚠️ You need to create at least one Element component first before
-              creating an API.
+              creating a Data API.
             </p>
           </div>
           <div className="mt-6 flex justify-end">
@@ -146,7 +146,7 @@ export function ManipulatorModal({
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">
-              Create API (Manipulator) 🌐
+              Create Data API 🌐
             </h2>
             <button
               onClick={onClose}

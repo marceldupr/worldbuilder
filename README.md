@@ -175,7 +175,7 @@ worldcreator/
 ## 🎨 Component Types
 
 1. **Element** 🔷 - Data entities (Product, User, Order)
-2. **Manipulator** 🌐 - API endpoints (REST CRUD)
+2. **Data API** 🌐 - API endpoints (REST CRUD)
 3. **Worker** ⚙️ - Background jobs (async processing)
 4. **Helper** 🔧 - Utilities (Email, Payment, Storage)
 5. **Auditor** 📋 - Validation and audit trails

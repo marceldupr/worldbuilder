@@ -21,6 +21,8 @@ interface CanvasState {
   reset: () => void;
 }
 
+let saveTimeout: NodeJS.Timeout | null = null;
+
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   nodes: [],
   edges: [],
@@ -30,16 +32,18 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     set((state) => ({
       nodes: typeof nodes === 'function' ? nodes(state.nodes) : nodes,
     }));
-    // Auto-save after a delay
-    setTimeout(() => get().saveCanvas(), 1000);
+    // Debounced auto-save
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => get().saveCanvas(), 1000);
   },
 
   setEdges: (edges) => {
     set((state) => ({
       edges: typeof edges === 'function' ? edges(state.edges) : edges,
     }));
-    // Auto-save after a delay
-    setTimeout(() => get().saveCanvas(), 1000);
+    // Debounced auto-save
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => get().saveCanvas(), 1000);
   },
 
   setProjectId: (id) => set({ projectId: id }),
@@ -48,7 +52,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     set((state) => ({
       nodes: [...state.nodes, node],
     }));
-    setTimeout(() => get().saveCanvas(), 1000);
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => get().saveCanvas(), 1000);
   },
 
   removeNode: (id) => {
@@ -56,7 +61,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       nodes: state.nodes.filter((n) => n.id !== id),
       edges: state.edges.filter((e) => e.source !== id && e.target !== id),
     }));
-    setTimeout(() => get().saveCanvas(), 1000);
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => get().saveCanvas(), 1000);
   },
 
   updateNode: (id, data) => {
@@ -65,7 +71,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         n.id === id ? { ...n, data: { ...n.data, ...data } } : n
       ),
     }));
-    setTimeout(() => get().saveCanvas(), 1000);
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => get().saveCanvas(), 1000);
   },
 
   loadCanvas: async (projectId: string) => {

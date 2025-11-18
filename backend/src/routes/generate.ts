@@ -17,13 +17,17 @@ const GenerateSchemaSchema = z.object({
 // POST /api/generate/schema - Generate component schema using AI
 router.post('/schema', async (req: AuthRequest, res) => {
   try {
+    console.log('[Generate] Schema generation request:', req.body);
     const { componentType, name, description } = GenerateSchemaSchema.parse(req.body);
 
+    console.log('[Generate] Type:', componentType, 'Name:', name);
+    
     const systemPrompt = getSystemPrompt(componentType);
     const userPrompt = getUserPrompt(componentType, name, description);
 
+    console.log('[Generate] Calling OpenAI...');
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -37,15 +41,24 @@ router.post('/schema', async (req: AuthRequest, res) => {
       throw new Error('No response from OpenAI');
     }
 
+    console.log('[Generate] AI response received, parsing...');
     const schema = JSON.parse(schemaJson);
+    console.log('[Generate] ✅ Schema generated successfully');
 
     res.json({ schema });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
+      console.error('[Generate] Validation error:', error.errors);
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Error generating schema:', error);
-    res.status(500).json({ error: 'Failed to generate schema' });
+    console.error('[Generate] ❌ Error generating schema:');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    res.status(500).json({ 
+      error: 'Failed to generate schema',
+      details: error.message 
+    });
   }
 });
 

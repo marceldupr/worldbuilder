@@ -1,10 +1,8 @@
 import Handlebars from 'handlebars';
-import { PrismaClient } from '@prisma/client';
 import fs from 'fs/promises';
 import path from 'path';
+import { prisma } from '../utils/prisma.js';
 import { templateHelpers } from '../utils/templateHelpers.js';
-
-const prisma = new PrismaClient();
 
 // Register Handlebars helpers
 Object.entries(templateHelpers).forEach(([name, fn]) => {
@@ -67,6 +65,10 @@ export class CodeGeneratorService {
     // Generate docker-compose.yml
     files.push(this.generateDockerCompose());
 
+    // Generate test configuration files
+    files.push(this.generateVitestConfig());
+    files.push(this.generateTestSetup());
+
     return files;
   }
 
@@ -104,7 +106,7 @@ export class CodeGeneratorService {
 
     // Entity file
     const entityTemplate = await this.loadTemplate('element/entity.ts.hbs');
-    const entityContent = this.compileTemplate(entityTemplate, schema);
+    const entityContent = this.compileTemplate(entityTemplate, { ...schema, name });
     files.push({
       path: `src/entities/${templateHelpers.kebabCase(name)}.entity.ts`,
       content: entityContent,
@@ -112,11 +114,23 @@ export class CodeGeneratorService {
 
     // Service file
     const serviceTemplate = await this.loadTemplate('element/service.ts.hbs');
-    const serviceContent = this.compileTemplate(serviceTemplate, schema);
+    const serviceContent = this.compileTemplate(serviceTemplate, { ...schema, name });
     files.push({
       path: `src/services/${templateHelpers.kebabCase(name)}.service.ts`,
       content: serviceContent,
     });
+
+    // Test file (always generate tests)
+    try {
+      const testTemplate = await this.loadTemplate('element/test.ts.hbs');
+      const testContent = this.compileTemplate(testTemplate, { ...schema, name });
+      files.push({
+        path: `src/entities/__tests__/${templateHelpers.kebabCase(name)}.service.test.ts`,
+        content: testContent,
+      });
+    } catch (error) {
+      console.error(`Error generating test for ${name}:`, error);
+    }
 
     return files;
   }
@@ -135,6 +149,18 @@ export class CodeGeneratorService {
       path: `src/controllers/${templateHelpers.kebabCase(schema.linkedElement)}.controller.ts`,
       content: controllerContent,
     });
+
+    // Test file (always generate tests)
+    try {
+      const testTemplate = await this.loadTemplate('manipulator/test.ts.hbs');
+      const testContent = this.compileTemplate(testTemplate, schema);
+      files.push({
+        path: `src/controllers/__tests__/${templateHelpers.kebabCase(schema.linkedElement)}.controller.test.ts`,
+        content: testContent,
+      });
+    } catch (error) {
+      console.error(`Error generating test for ${schema.linkedElement} API:`, error);
+    }
 
     return files;
   }
@@ -283,7 +309,10 @@ datasource db {
         'db:generate': 'prisma generate',
         'db:push': 'prisma db push',
         'db:migrate': 'prisma migrate dev',
-        test: 'vitest',
+        test: 'vitest run',
+        'test:watch': 'vitest',
+        'test:coverage': 'vitest run --coverage',
+        'test:ui': 'vitest --ui',
         ...(hasWorkers && {
           'worker:dev': 'tsx watch src/workers/*.worker.ts',
         }),
@@ -293,6 +322,10 @@ datasource db {
         '@types/express': '^4.17.21',
         '@types/cors': '^2.8.17',
         '@types/node': '^20.10.5',
+        '@vitest/ui': '^1.0.4',
+        '@vitest/coverage-v8': '^1.0.4',
+        'supertest': '^6.3.3',
+        '@types/supertest': '^6.0.2',
         typescript: '^5.3.3',
         tsx: '^4.7.0',
         prisma: '^5.7.1',
@@ -471,6 +504,59 @@ services:
 
 volumes:
   postgres_data:
+`,
+    };
+  }
+
+  /**
+   * Generate vitest configuration
+   */
+  private generateVitestConfig(): GeneratedFile {
+    return {
+      path: 'vitest.config.ts',
+      content: `import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    globals: true,
+    environment: 'node',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      exclude: [
+        'node_modules/**',
+        'dist/**',
+        '**/*.test.ts',
+        '**/*.spec.ts',
+      ],
+    },
+  },
+});
+`,
+    };
+  }
+
+  /**
+   * Generate test setup file
+   */
+  private generateTestSetup(): GeneratedFile {
+    return {
+      path: 'tests/setup.ts',
+      content: `import { beforeAll, afterAll } from 'vitest';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+beforeAll(async () => {
+  // Setup test database
+  console.log('🧪 Test setup...');
+});
+
+afterAll(async () => {
+  // Cleanup
+  await prisma.$disconnect();
+  console.log('🧪 Test cleanup complete');
+});
 `,
     };
   }

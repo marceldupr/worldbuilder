@@ -1,11 +1,10 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
 import archiver from 'archiver';
 import type { AuthRequest } from '../middleware/auth.js';
+import { prisma } from '../utils/prisma.js';
 import { CodeGeneratorService } from '../services/CodeGenerator.service.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 const codeGenerator = new CodeGeneratorService();
 
 // POST /api/code/generate/:projectId - Generate code for project

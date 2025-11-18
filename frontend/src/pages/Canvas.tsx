@@ -21,10 +21,12 @@ import { WorkerModal } from '../components/modals/WorkerModal';
 import { HelperModal } from '../components/modals/HelperModal';
 import { CodePreviewModal } from '../components/modals/CodePreviewModal';
 import { GitHubPushModal } from '../components/modals/GitHubPushModal';
+import { RelationshipModal } from '../components/modals/RelationshipModal';
 import { Toaster, showToast } from '../components/ui/toast';
 import { KeyboardShortcutsHelp } from '../components/ui/KeyboardShortcutsHelp';
 import { ComponentStats } from '../components/canvas/ComponentStats';
-import { projectsApi } from '../lib/api';
+import { ComponentDetails } from '../components/canvas/ComponentDetails';
+import { projectsApi, componentsApi } from '../lib/api';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const nodeTypes = {
@@ -45,8 +47,12 @@ function CanvasContent() {
   const [showHelperModal, setShowHelperModal] = useState(false);
   const [showCodePreview, setShowCodePreview] = useState(false);
   const [showGitHubPush, setShowGitHubPush] = useState(false);
+  const [showRelationshipModal, setShowRelationshipModal] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [dropPosition, setDropPosition] = useState({ x: 0, y: 0 });
+  const [editingComponent, setEditingComponent] = useState<any>(null);
+  const [pendingConnection, setPendingConnection] = useState<any>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   useEffect(() => {
     if (projectId) {
@@ -108,8 +114,71 @@ function CanvasContent() {
   );
 
   const onConnect = useCallback(
-    (params: Connection | Edge) => setEdges((eds: Edge[]) => addEdge(params, eds)),
-    [setEdges]
+    (params: Connection | Edge) => {
+      console.log('[Canvas] onConnect triggered!', params);
+      // Find the source and target nodes
+      const sourceNode = nodes.find((n) => n.id === params.source);
+      const targetNode = nodes.find((n) => n.id === params.target);
+      console.log('[Canvas] Source node:', sourceNode);
+      console.log('[Canvas] Target node:', targetNode);
+
+      if (sourceNode && targetNode) {
+        console.log('[Canvas] Both nodes found, showing relationship modal');
+        // Show relationship modal
+        setPendingConnection({ params, sourceNode, targetNode });
+        setShowRelationshipModal(true);
+      } else {
+        console.error('[Canvas] Missing nodes!', { sourceNode, targetNode });
+      }
+    },
+    [nodes]
+  );
+
+  const handleRelationshipDefined = useCallback(
+    async (relationship: any) => {
+      if (!pendingConnection) return;
+
+      const { params, sourceNode } = pendingConnection;
+
+      try {
+        console.log('[Relationship] Fetching component:', sourceNode.id);
+        // Fetch the source component to get its current schema
+        const component = await componentsApi.get(sourceNode.id);
+        console.log('[Relationship] Component fetched:', component);
+        
+        // Add relationship to the schema
+        const updatedSchema = {
+          ...component.schema,
+          relationships: [
+            ...(component.schema.relationships || []),
+            relationship,
+          ],
+        };
+        console.log('[Relationship] Updated schema:', updatedSchema);
+
+        // Update the component with new schema
+        console.log('[Relationship] Updating component with new schema...');
+        await componentsApi.update(sourceNode.id, { schema: updatedSchema });
+        console.log('[Relationship] Component updated successfully');
+
+        // Add the visual edge
+        setEdges((eds: Edge[]) => 
+          addEdge({
+            ...params,
+            label: relationship.fieldName,
+            animated: true,
+          }, eds)
+        );
+
+        showToast('Relationship added!', 'success');
+      } catch (error: any) {
+        console.error('[Relationship] Error:', error);
+        showToast(error.message || 'Failed to add relationship', 'error');
+      }
+
+      setPendingConnection(null);
+    },
+    [pendingConnection, setEdges]
   );
 
   const onDragOver = useCallback((event: DragEvent) => {
@@ -155,9 +224,69 @@ function CanvasContent() {
         type: component.type,
         status: component.status,
         description: component.description,
+        locked: component.locked || false,
       },
     };
     addNode(newNode);
+  };
+
+  const handleNodeClick = useCallback(
+    async (event: any, node: Node) => {
+      // Check if it's a double-click to edit
+      if (event.detail === 2) {
+        try {
+          // Fetch the component data
+          const component = await componentsApi.get(node.id);
+          setEditingComponent(component);
+          
+          // Open the appropriate modal based on type
+          if (component.type === 'element') {
+            setShowElementModal(true);
+          } else if (component.type === 'manipulator') {
+            setShowManipulatorModal(true);
+          } else if (component.type === 'worker') {
+            setShowWorkerModal(true);
+          } else if (component.type === 'helper') {
+            setShowHelperModal(true);
+          }
+        } catch (error: any) {
+          showToast(error.message || 'Failed to load component', 'error');
+        }
+      } else {
+        // Single click - show details
+        setSelectedNodeId(node.id);
+      }
+    },
+    []
+  );
+
+  const handleComponentUpdated = (component: any) => {
+    // Update the node in the canvas
+    setNodes((nds: Node[]) =>
+      nds.map((n) =>
+        n.id === component.id
+          ? {
+              ...n,
+              data: {
+                ...n.data,
+                label: component.name,
+                description: component.description,
+                status: component.status,
+                locked: component.locked,
+              },
+            }
+          : n
+      )
+    );
+    setEditingComponent(null);
+  };
+
+  const closeEditModal = () => {
+    setShowElementModal(false);
+    setShowManipulatorModal(false);
+    setShowWorkerModal(false);
+    setShowHelperModal(false);
+    setEditingComponent(null);
   };
 
   // Keyboard shortcuts
@@ -250,7 +379,7 @@ function CanvasContent() {
           <div className="space-y-2">
             {[
               { name: 'Element', icon: '🔷', color: 'bg-blue-100', type: 'element' },
-              { name: 'Manipulator', icon: '🌐', color: 'bg-indigo-100', type: 'manipulator' },
+              { name: 'Data API', icon: '🌐', color: 'bg-indigo-100', type: 'manipulator' },
               { name: 'Worker', icon: '⚙️', color: 'bg-purple-100', type: 'worker' },
               { name: 'Helper', icon: '🔧', color: 'bg-yellow-100', type: 'helper' },
               { name: 'Auditor', icon: '📋', color: 'bg-green-100', type: 'auditor' },
@@ -281,6 +410,7 @@ function CanvasContent() {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
+            onNodeClick={handleNodeClick}
             onDrop={onDrop}
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
@@ -297,7 +427,7 @@ function CanvasContent() {
         </div>
 
         {/* Properties panel */}
-        <aside className="w-80 border-l bg-gray-50 p-4">
+        <aside className="w-80 border-l bg-gray-50 p-4 overflow-y-auto">
           <h3 className="mb-4 text-sm font-semibold text-gray-900">
             Project Info
           </h3>
@@ -310,6 +440,26 @@ function CanvasContent() {
           )}
 
           <ComponentStats components={nodes.map(n => ({ type: n.data.type }))} />
+
+          {selectedNodeId && (
+            <div className="mt-6">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-gray-900">
+                  Component Details
+                </h3>
+                <button
+                  onClick={() => setSelectedNodeId(null)}
+                  className="text-xs text-gray-500 hover:text-gray-700"
+                >
+                  Clear
+                </button>
+              </div>
+              <ComponentDetails nodeId={selectedNodeId} nodes={nodes} />
+              <p className="mt-3 text-xs text-gray-500 text-center">
+                💡 Double-click to edit
+              </p>
+            </div>
+          )}
           
           <div className="mt-6">
             <h3 className="mb-2 text-sm font-semibold text-gray-900">
@@ -340,8 +490,9 @@ function CanvasContent() {
         <ElementModal
           projectId={projectId}
           position={dropPosition}
-          onClose={() => setShowElementModal(false)}
-          onSuccess={handleElementCreated}
+          existingComponent={editingComponent}
+          onClose={closeEditModal}
+          onSuccess={editingComponent ? handleComponentUpdated : handleElementCreated}
         />
       )}
 
@@ -349,8 +500,8 @@ function CanvasContent() {
         <ManipulatorModal
           projectId={projectId}
           position={dropPosition}
-          onClose={() => setShowManipulatorModal(false)}
-          onSuccess={handleElementCreated}
+          onClose={closeEditModal}
+          onSuccess={editingComponent ? handleComponentUpdated : handleElementCreated}
         />
       )}
 
@@ -358,8 +509,8 @@ function CanvasContent() {
         <WorkerModal
           projectId={projectId}
           position={dropPosition}
-          onClose={() => setShowWorkerModal(false)}
-          onSuccess={handleElementCreated}
+          onClose={closeEditModal}
+          onSuccess={editingComponent ? handleComponentUpdated : handleElementCreated}
         />
       )}
 
@@ -367,8 +518,20 @@ function CanvasContent() {
         <HelperModal
           projectId={projectId}
           position={dropPosition}
-          onClose={() => setShowHelperModal(false)}
-          onSuccess={handleElementCreated}
+          onClose={closeEditModal}
+          onSuccess={editingComponent ? handleComponentUpdated : handleElementCreated}
+        />
+      )}
+
+      {showRelationshipModal && pendingConnection && (
+        <RelationshipModal
+          sourceNode={pendingConnection.sourceNode}
+          targetNode={pendingConnection.targetNode}
+          onClose={() => {
+            setShowRelationshipModal(false);
+            setPendingConnection(null);
+          }}
+          onSuccess={handleRelationshipDefined}
         />
       )}
       

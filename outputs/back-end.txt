@@ -1,0 +1,190 @@
+ponents"."project_id" IN ($1) OFFSET $2
+[Auth] Request to: GET /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND "public"."projects"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."components"."id", "public"."components"."project_id", "public"."components"."type", "public"."components"."name", "public"."components"."description", "public"."components"."schema", "public"."components"."position", "public"."components"."status", "public"."components"."created_at", "public"."components"."updated_at" FROM "public"."components" WHERE "public"."components"."project_id" IN ($1) OFFSET $2
+[Auth] Request to: GET /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND "public"."projects"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."components"."id", "public"."components"."project_id", "public"."components"."type", "public"."components"."name", "public"."components"."description", "public"."components"."schema", "public"."components"."position", "public"."components"."status", "public"."components"."created_at", "public"."components"."updated_at" FROM "public"."components" WHERE "public"."components"."project_id" IN ($1) OFFSET $2
+[Auth] Request to: GET /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND "public"."projects"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."components"."id", "public"."components"."project_id", "public"."components"."type", "public"."components"."name", "public"."components"."description", "public"."components"."schema", "public"."components"."position", "public"."components"."status", "public"."components"."created_at", "public"."components"."updated_at" FROM "public"."components" WHERE "public"."components"."project_id" IN ($1) OFFSET $2
+[Auth] Request to: PATCH /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query BEGIN
+prisma:query UPDATE "public"."projects" SET "canvas_data" = $1, "updated_at" = $2 WHERE ("public"."projects"."id" = $3 AND "public"."projects"."user_id" = $4)
+prisma:query COMMIT
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[Auth] Request to: PATCH /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query BEGIN
+prisma:query UPDATE "public"."projects" SET "canvas_data" = $1, "updated_at" = $2 WHERE ("public"."projects"."id" = $3 AND "public"."projects"."user_id" = $4)
+prisma:query COMMIT
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[Auth] Request to: PATCH /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query BEGIN
+prisma:query UPDATE "public"."projects" SET "canvas_data" = $1, "updated_at" = $2 WHERE ("public"."projects"."id" = $3 AND "public"."projects"."user_id" = $4)
+prisma:query COMMIT
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[Auth] Request to: GET /
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT 1
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at", COALESCE("aggr_selection_0_Component"."_aggr_count_components", 0) AS "_aggr_count_components" FROM "public"."projects" LEFT JOIN (SELECT "public"."components"."project_id", COUNT(*) AS "_aggr_count_components" FROM "public"."components" WHERE 1=1 GROUP BY "public"."components"."project_id") AS "aggr_selection_0_Component" ON ("public"."projects"."id" = "aggr_selection_0_Component"."project_id") WHERE "public"."projects"."user_id" = $1 ORDER BY "public"."projects"."updated_at" DESC OFFSET $2
+[Auth] Request to: GET /
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at", COALESCE("aggr_selection_0_Component"."_aggr_count_components", 0) AS "_aggr_count_components" FROM "public"."projects" LEFT JOIN (SELECT "public"."components"."project_id", COUNT(*) AS "_aggr_count_components" FROM "public"."components" WHERE 1=1 GROUP BY "public"."components"."project_id") AS "aggr_selection_0_Component" ON ("public"."projects"."id" = "aggr_selection_0_Component"."project_id") WHERE "public"."projects"."user_id" = $1 ORDER BY "public"."projects"."updated_at" DESC OFFSET $2
+[Auth] Request to: GET /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND "public"."projects"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."components"."id", "public"."components"."project_id", "public"."components"."type", "public"."components"."name", "public"."components"."description", "public"."components"."schema", "public"."components"."position", "public"."components"."status", "public"."components"."created_at", "public"."components"."updated_at" FROM "public"."components" WHERE "public"."components"."project_id" IN ($1) OFFSET $2
+[Auth] Request to: GET /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND "public"."projects"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."components"."id", "public"."components"."project_id", "public"."components"."type", "public"."components"."name", "public"."components"."description", "public"."components"."schema", "public"."components"."position", "public"."components"."status", "public"."components"."created_at", "public"."components"."updated_at" FROM "public"."components" WHERE "public"."components"."project_id" IN ($1) OFFSET $2
+[Auth] Request to: GET /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND "public"."projects"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."components"."id", "public"."components"."project_id", "public"."components"."type", "public"."components"."name", "public"."components"."description", "public"."components"."schema", "public"."components"."position", "public"."components"."status", "public"."components"."created_at", "public"."components"."updated_at" FROM "public"."components" WHERE "public"."components"."project_id" IN ($1) OFFSET $2
+[Auth] Request to: GET /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND "public"."projects"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."components"."id", "public"."components"."project_id", "public"."components"."type", "public"."components"."name", "public"."components"."description", "public"."components"."schema", "public"."components"."position", "public"."components"."status", "public"."components"."created_at", "public"."components"."updated_at" FROM "public"."components" WHERE "public"."components"."project_id" IN ($1) OFFSET $2
+[Auth] Request to: PATCH /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query BEGIN
+prisma:query UPDATE "public"."projects" SET "canvas_data" = $1, "updated_at" = $2 WHERE ("public"."projects"."id" = $3 AND "public"."projects"."user_id" = $4)
+prisma:query COMMIT
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[Auth] Request to: PATCH /13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query BEGIN
+prisma:query UPDATE "public"."projects" SET "canvas_data" = $1, "updated_at" = $2 WHERE ("public"."projects"."id" = $3 AND "public"."projects"."user_id" = $4)
+prisma:query COMMIT
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+[Auth] Request to: GET /preview/13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND "public"."projects"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."components"."id", "public"."components"."project_id", "public"."components"."type", "public"."components"."name", "public"."components"."description", "public"."components"."schema", "public"."components"."position", "public"."components"."status", "public"."components"."created_at", "public"."components"."updated_at" FROM "public"."components" WHERE "public"."components"."project_id" IN ($1) OFFSET $2
+Error generating Prisma model for Owner: TypeError: Cannot read properties of undefined (reading 'replace')
+    at Object.pascalCase (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/utils/templateHelpers.ts:9:8)
+    at Object.wrapper (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/internal/wrapHelper.js:10:19)
+    at Object.eval [as main] (eval at createFunctionContext (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/dist/cjs/handlebars/compiler/javascript-compiler.js:262:23), <anonymous>:11:110)
+    at main (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:230:22)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:250:12)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/compiler/compiler.js:548:21)
+    at CodeGeneratorService.compileTemplate (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:489:12)
+    at CodeGeneratorService.generatePrismaSchema (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:216:35)
+    at async CodeGeneratorService.generateProject (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:50:26)
+    at async <anonymous> (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/routes/code.ts:59:19)
+Error generating Prisma model for Task: TypeError: Cannot read properties of undefined (reading 'replace')
+    at Object.pascalCase (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/utils/templateHelpers.ts:9:8)
+    at Object.wrapper (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/internal/wrapHelper.js:10:19)
+    at Object.eval [as main] (eval at createFunctionContext (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/dist/cjs/handlebars/compiler/javascript-compiler.js:262:23), <anonymous>:11:110)
+    at main (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:230:22)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:250:12)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/compiler/compiler.js:548:21)
+    at CodeGeneratorService.compileTemplate (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:489:12)
+    at CodeGeneratorService.generatePrismaSchema (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:216:35)
+    at async CodeGeneratorService.generateProject (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:50:26)
+    at async <anonymous> (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/routes/code.ts:59:19)
+Error previewing code: TypeError: Cannot read properties of undefined (reading 'replace')
+    at Object.pascalCase (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/utils/templateHelpers.ts:9:8)
+    at Object.wrapper (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/internal/wrapHelper.js:10:19)
+    at Object.eval [as main] (eval at createFunctionContext (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/dist/cjs/handlebars/compiler/javascript-compiler.js:262:23), <anonymous>:15:110)
+    at main (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:230:22)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:250:12)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/compiler/compiler.js:548:21)
+    at CodeGeneratorService.compileTemplate (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:489:12)
+    at CodeGeneratorService.generateElementFiles (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:105:32)
+    at async CodeGeneratorService.generateComponent (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:79:24)
+    at async CodeGeneratorService.generateProject (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:55:30)
+[Auth] Request to: GET /preview/13b2670b-5a2b-427b-878a-7fa9d2050b3a
+[Auth] Headers: Bearer token present
+[Auth] Token: eyJhbGciOiJIUzI1NiIs...
+[Auth] ✅ User authenticated: marceldupr@gmail.com
+prisma:query SELECT "public"."users"."id", "public"."users"."email", "public"."users"."name", "public"."users"."created_at", "public"."users"."updated_at" FROM "public"."users" WHERE ("public"."users"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND "public"."projects"."user_id" = $2) LIMIT $3 OFFSET $4
+prisma:query SELECT "public"."projects"."id", "public"."projects"."name", "public"."projects"."description", "public"."projects"."user_id", "public"."projects"."canvas_data", "public"."projects"."github_repo", "public"."projects"."deployment_url", "public"."projects"."created_at", "public"."projects"."updated_at" FROM "public"."projects" WHERE ("public"."projects"."id" = $1 AND 1=1) LIMIT $2 OFFSET $3
+prisma:query SELECT "public"."components"."id", "public"."components"."project_id", "public"."components"."type", "public"."components"."name", "public"."components"."description", "public"."components"."schema", "public"."components"."position", "public"."components"."status", "public"."components"."created_at", "public"."components"."updated_at" FROM "public"."components" WHERE "public"."components"."project_id" IN ($1) OFFSET $2
+Error generating Prisma model for Owner: TypeError: Cannot read properties of undefined (reading 'replace')
+    at Object.pascalCase (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/utils/templateHelpers.ts:9:8)
+    at Object.wrapper (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/internal/wrapHelper.js:10:19)
+    at Object.eval [as main] (eval at createFunctionContext (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/dist/cjs/handlebars/compiler/javascript-compiler.js:262:23), <anonymous>:11:110)
+    at main (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:230:22)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:250:12)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/compiler/compiler.js:548:21)
+    at CodeGeneratorService.compileTemplate (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:489:12)
+    at CodeGeneratorService.generatePrismaSchema (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:216:35)
+    at async CodeGeneratorService.generateProject (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:50:26)
+    at async <anonymous> (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/routes/code.ts:59:19)
+Error generating Prisma model for Task: TypeError: Cannot read properties of undefined (reading 'replace')
+    at Object.pascalCase (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/utils/templateHelpers.ts:9:8)
+    at Object.wrapper (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/internal/wrapHelper.js:10:19)
+    at Object.eval [as main] (eval at createFunctionContext (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/dist/cjs/handlebars/compiler/javascript-compiler.js:262:23), <anonymous>:11:110)
+    at main (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:230:22)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:250:12)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/compiler/compiler.js:548:21)
+    at CodeGeneratorService.compileTemplate (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:489:12)
+    at CodeGeneratorService.generatePrismaSchema (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:216:35)
+    at async CodeGeneratorService.generateProject (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:50:26)
+    at async <anonymous> (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/routes/code.ts:59:19)
+Error previewing code: TypeError: Cannot read properties of undefined (reading 'replace')
+    at Object.pascalCase (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/utils/templateHelpers.ts:9:8)
+    at Object.wrapper (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/internal/wrapHelper.js:10:19)
+    at Object.eval [as main] (eval at createFunctionContext (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/dist/cjs/handlebars/compiler/javascript-compiler.js:262:23), <anonymous>:15:110)
+    at main (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:230:22)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/runtime.js:250:12)
+    at ret (/Users/marceldupreez/Code/mandeville/worldcreator/node_modules/handlebars/lib/handlebars/compiler/compiler.js:548:21)
+    at CodeGeneratorService.compileTemplate (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:489:12)
+    at CodeGeneratorService.generateElementFiles (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:105:32)
+    at async CodeGeneratorService.generateComponent (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:79:24)
+    at async CodeGeneratorService.generateProject (/Users/marceldupreez/Code/mandeville/worldcreator/backend/src/services/CodeGenerator.service.ts:55:30)

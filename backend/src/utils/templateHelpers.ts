@@ -5,18 +5,21 @@
 export const templateHelpers = {
   // String case transformations
   pascalCase: (str: string) => {
+    if (!str) return '';
     return str
       .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase())
       .replace(/^(.)/, (chr) => chr.toUpperCase());
   },
 
   camelCase: (str: string) => {
+    if (!str) return '';
     return str
       .replace(/[^a-zA-Z0-9]+(.)/g, (_, chr) => chr.toUpperCase())
       .replace(/^(.)/, (chr) => chr.toLowerCase());
   },
 
   kebabCase: (str: string) => {
+    if (!str) return '';
     return str
       .replace(/([a-z])([A-Z])/g, '$1-$2')
       .replace(/[\s_]+/g, '-')
@@ -24,6 +27,7 @@ export const templateHelpers = {
   },
 
   snakeCase: (str: string) => {
+    if (!str) return '';
     return str
       .replace(/([a-z])([A-Z])/g, '$1_$2')
       .replace(/[\s-]+/g, '_')
@@ -31,6 +35,7 @@ export const templateHelpers = {
   },
 
   pluralize: (str: string) => {
+    if (!str) return '';
     if (str.endsWith('y')) {
       return str.slice(0, -1) + 'ies';
     }
@@ -42,6 +47,7 @@ export const templateHelpers = {
 
   // Type mappings
   mapType: (type: string) => {
+    if (!type) return 'String';
     const typeMap: Record<string, string> = {
       string: 'String',
       integer: 'Int',
@@ -57,6 +63,7 @@ export const templateHelpers = {
   },
 
   zodType: (type: string) => {
+    if (!type) return 'z.string()';
     const zodMap: Record<string, string> = {
       string: 'z.string()',
       integer: 'z.number().int()',
@@ -79,6 +86,7 @@ export const templateHelpers = {
 
   // Array helpers
   join: (arr: any[], separator: string = ', ') => {
+    if (!arr || !Array.isArray(arr)) return '';
     return arr.join(separator);
   },
 

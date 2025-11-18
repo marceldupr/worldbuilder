@@ -5,16 +5,18 @@ import { showToast } from '../ui/toast';
 interface ElementModalProps {
   projectId: string;
   position: { x: number; y: number };
+  existingComponent?: any;
   onClose: () => void;
   onSuccess: (component: any) => void;
 }
 
-export function ElementModal({ projectId, position, onClose, onSuccess }: ElementModalProps) {
-  const [step, setStep] = useState<'describe' | 'review'>('describe');
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+export function ElementModal({ projectId, position, existingComponent, onClose, onSuccess }: ElementModalProps) {
+  const isEditing = !!existingComponent;
+  const [step, setStep] = useState<'describe' | 'review'>(existingComponent ? 'review' : 'describe');
+  const [name, setName] = useState(existingComponent?.name || '');
+  const [description, setDescription] = useState(existingComponent?.description || '');
   const [loading, setLoading] = useState(false);
-  const [schema, setSchema] = useState<any>(null);
+  const [schema, setSchema] = useState<any>(existingComponent?.schema || null);
 
   const examples = [
     'A Product with name, price, description, and inventory count. Price must be positive. Inventory defaults to 0.',
@@ -50,20 +52,30 @@ export function ElementModal({ projectId, position, onClose, onSuccess }: Elemen
   async function handleSave() {
     setLoading(true);
     try {
-      const component = await componentsApi.create({
-        projectId,
-        type: 'element',
-        name: name.trim(),
-        description: description.trim(),
-        schema,
-        position,
-      });
+      let component;
+      if (isEditing) {
+        component = await componentsApi.update(existingComponent.id, {
+          name: name.trim(),
+          description: description.trim(),
+          schema,
+        });
+        showToast('Component updated successfully!', 'success');
+      } else {
+        component = await componentsApi.create({
+          projectId,
+          type: 'element',
+          name: name.trim(),
+          description: description.trim(),
+          schema,
+          position,
+        });
+        showToast('Component created successfully!', 'success');
+      }
 
-      showToast('Component created successfully!', 'success');
       onSuccess(component);
       onClose();
     } catch (error: any) {
-      showToast(error.message || 'Failed to create component', 'error');
+      showToast(error.message || 'Failed to save component', 'error');
     } finally {
       setLoading(false);
     }
@@ -82,7 +94,7 @@ export function ElementModal({ projectId, position, onClose, onSuccess }: Elemen
             <div className="mb-6">
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Create Element 🔷
+                  {isEditing ? 'Edit Element 🔷' : 'Create Element 🔷'}
                 </h2>
                 <button
                   onClick={onClose}
@@ -92,8 +104,10 @@ export function ElementModal({ projectId, position, onClose, onSuccess }: Elemen
                 </button>
               </div>
               <p className="text-sm text-gray-600">
-                Describe your data entity in natural language. AI will generate
-                the schema for you.
+                {isEditing 
+                  ? 'Update your element description and regenerate the schema.'
+                  : 'Describe your data entity in natural language. AI will generate the schema for you.'
+                }
               </p>
             </div>
 
@@ -270,7 +284,7 @@ export function ElementModal({ projectId, position, onClose, onSuccess }: Elemen
                   disabled={loading}
                   className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50"
                 >
-                  {loading ? 'Saving...' : 'Save Component ✓'}
+                  {loading ? 'Saving...' : (isEditing ? 'Update Component ✓' : 'Save Component ✓')}
                 </button>
               </div>
             </div>

@@ -33,13 +33,35 @@ cd ..
 
 ### 3. Set Up Supabase
 
+**Follow these steps EXACTLY:**
+
 1. Go to https://supabase.com and create a new project
-2. Wait for the project to be provisioned (takes 2-3 minutes)
-3. Once ready, go to Project Settings > API
-4. Copy the following:
-   - Project URL
-   - anon/public key
-   - Go to Database Settings > Connection String > URI and copy the connection string
+   - Choose a project name
+   - Set a database password (save this!)
+   - Choose a region close to you
+   
+2. Wait for provisioning (2-3 minutes)
+
+3. **Get your API credentials:**
+   - Go to **Project Settings** (gear icon) → **API**
+   - Copy **Project URL** (e.g., `https://xxxxx.supabase.co`)
+   - Copy **anon public** key (the long string)
+
+4. **Get your database connection string:**
+   - Go to **Project Settings** → **Database**
+   - Scroll to **"Connection string"** section
+   - Click on **"URI"** tab
+   - **CRITICAL:** Select **"Session mode"** (NOT Direct or Transaction mode)
+   - **Why:** Direct mode is IPv6 only, Session mode works with IPv4
+   - Copy the connection string (it will have port `5432`)
+   - Replace `[YOUR-PASSWORD]` with your actual database password
+   
+   **Correct format:**
+   ```
+   postgresql://postgres:your-password@db.xxxxx.supabase.co:5432/postgres
+   ```
+   
+   **Note:** No need to add SSL parameters - Supabase handles this automatically in Session mode
 
 ### 4. Configure Environment Variables
 
@@ -52,7 +74,8 @@ VITE_API_URL=http://localhost:3001
 
 **Backend** - Create `backend/.env`:
 ```env
-# Database (from Supabase Connection String, use "Transaction" mode)
+# Database (from Supabase Connection String)
+# IMPORTANT: Use "Session" mode (port 5432) - NOT Direct mode (IPv6 only)
 DATABASE_URL=postgresql://postgres:[password]@db.your-project.supabase.co:5432/postgres
 
 # Supabase
@@ -146,8 +169,24 @@ Make sure `FRONTEND_URL` in backend `.env` matches your frontend URL.
 ### Supabase Connection Errors
 
 1. Check your DATABASE_URL is correct
-2. Make sure you're using the "Transaction" mode connection string (not "Session" mode)
-3. Verify your IP is allowed in Supabase (Settings > Database > Connection Pooling)
+2. **CRITICAL:** Use "Session" mode connection string (port 5432)
+   - ❌ **NOT "Direct" mode** (IPv6 only - won't work on most systems)
+   - ❌ **NOT "Transaction" mode** (port 6543 - pooler, doesn't work with Prisma migrations)
+   - ✅ **USE "Session" mode** (port 5432 - IPv4 compatible)
+3. No need to add SSL parameters (Supabase handles this automatically)
+4. Verify your project is **Active** (not paused) in Supabase dashboard
+5. Replace `[YOUR-PASSWORD]` with your actual database password
+
+**Correct format (Session mode):**
+```
+postgresql://postgres:YOUR_PASSWORD@db.PROJECT.supabase.co:5432/postgres
+```
+
+**Wrong formats:**
+```
+❌ postgresql://postgres:pass@aws-0-us-east-1.pooler.supabase.com:6543/postgres  (Direct - IPv6 only)
+❌ postgresql://postgres:pass@db.PROJECT.supabase.co:6543/postgres  (Transaction - pooler)
+```
 
 ### OpenAI API Errors
 

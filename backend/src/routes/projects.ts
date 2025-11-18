@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import type { AuthRequest } from '../middleware/auth.js';
+import { prisma } from '../utils/prisma.js';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 const CreateProjectSchema = z.object({
   name: z.string().min(1).max(100),
@@ -64,7 +63,11 @@ router.get('/:id', async (req: AuthRequest, res) => {
 // POST /api/projects - Create new project
 router.post('/', async (req: AuthRequest, res) => {
   try {
+    console.log('[Projects] Creating project for user:', req.user!.id);
+    console.log('[Projects] Data:', req.body);
+    
     const data = CreateProjectSchema.parse(req.body);
+    console.log('[Projects] Validated data:', data);
 
     const project = await prisma.project.create({
       data: {
@@ -73,13 +76,23 @@ router.post('/', async (req: AuthRequest, res) => {
       },
     });
 
+    console.log('[Projects] ✅ Project created:', project.id);
     res.status(201).json(project);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
+      console.error('[Projects] Validation error:', error.errors);
       return res.status(400).json({ error: error.errors });
     }
-    console.error('Error creating project:', error);
-    res.status(500).json({ error: 'Failed to create project' });
+    console.error('[Projects] ❌ Error creating project:');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error code:', error.code);
+    console.error('Full error:', error);
+    res.status(500).json({ 
+      error: 'Failed to create project',
+      details: error.message,
+      code: error.code 
+    });
   }
 });
 

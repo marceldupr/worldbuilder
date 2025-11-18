@@ -82,13 +82,19 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
   }
 
   function getFileIcon(path: string): string {
+    if (path.includes('.test.ts') || path.includes('.spec.ts')) return '🧪';
     if (path.endsWith('.ts') || path.endsWith('.tsx')) return '📘';
     if (path.endsWith('.json')) return '📋';
     if (path.endsWith('.md')) return '📄';
     if (path.endsWith('.prisma')) return '🗄️';
     if (path === 'Dockerfile') return '🐳';
     if (path.endsWith('.yml') || path.endsWith('.yaml')) return '⚙️';
+    if (path === 'vitest.config.ts') return '⚙️';
     return '📄';
+  }
+
+  function isTestFile(path: string): boolean {
+    return path.includes('.test.ts') || path.includes('.spec.ts') || path.includes('__tests__') || path.includes('vitest.config');
   }
 
   function organizeFiles(files: GeneratedFile[]) {
@@ -125,8 +131,12 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
               key={file.path}
               onClick={() => setSelectedFile(file)}
               className={`flex w-full items-center space-x-2 rounded px-2 py-1.5 text-left text-sm hover:bg-gray-100 ${
-                selectedFile?.path === file.path ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-              }`}
+                selectedFile?.path === file.path 
+                  ? isTestFile(file.path)
+                    ? 'bg-purple-50 text-purple-700'
+                    : 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700'
+              } ${isTestFile(file.path) ? 'border-l-2 border-purple-400' : ''}`}
               style={{ paddingLeft: `${(level + 1) * 16}px` }}
             >
               <span>{getFileIcon(file.path)}</span>
@@ -200,8 +210,23 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
           {/* File tree sidebar */}
           <div className="w-64 overflow-y-auto border-r bg-gray-50 p-4">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Files
+              Files ({files.length})
             </h3>
+            
+            {/* Test files summary */}
+            {files.filter(f => isTestFile(f.path)).length > 0 && (
+              <div className="mb-3 rounded-lg bg-purple-50 border border-purple-200 p-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium text-purple-900">
+                    🧪 Tests
+                  </span>
+                  <span className="text-purple-700">
+                    {files.filter(f => isTestFile(f.path)).length} files
+                  </span>
+                </div>
+              </div>
+            )}
+            
             <div className="space-y-0.5">{renderFileTree(fileTree)}</div>
           </div>
 

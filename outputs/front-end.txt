@@ -1,0 +1,121 @@
+marceldupreez@MandevilleMDP worldcreator % cd frontend 
+marceldupreez@MandevilleMDP frontend % ls
+Dockerfile.dev          package.json            tailwind.config.js      vite.config.ts
+index.html              postcss.config.js       tsconfig.json
+node_modules            src                     tsconfig.node.json
+marceldupreez@MandevilleMDP frontend % nvm use stable
+Now using node v22.14.0 (npm v10.9.2)
+marceldupreez@MandevilleMDP frontend % yarn dev
+yarn run v1.22.22
+$ vite
+
+  VITE v5.4.21  ready in 299 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+08:16:23 [vite] hmr update /src/index.css, /src/pages/Dashboard.tsx, /src/pages/Canvas.tsx, /src/components/modals/ElementModal.tsx, /src/components/modals/ManipulatorModal.tsx, /src/components/modals/CodePreviewModal.tsx, /src/components/modals/GitHubPushModal.tsx, /src/components/modals/HelperModal.tsx, /src/components/modals/WorkerModal.tsx
+08:16:24 [vite] hmr update /src/index.css, /src/pages/Dashboard.tsx, /src/pages/Canvas.tsx, /src/components/modals/ElementModal.tsx, /src/components/modals/ManipulatorModal.tsx, /src/components/modals/CodePreviewModal.tsx, /src/components/modals/GitHubPushModal.tsx, /src/components/modals/HelperModal.tsx, /src/components/modals/WorkerModal.tsx (x2)
+08:16:37 [vite] hmr update /src/index.css, /src/pages/Dashboard.tsx, /src/pages/Canvas.tsx, /src/components/modals/ElementModal.tsx, /src/components/modals/ManipulatorModal.tsx, /src/components/modals/CodePreviewModal.tsx, /src/components/modals/GitHubPushModal.tsx, /src/components/modals/HelperModal.tsx, /src/components/modals/WorkerModal.tsx (x3)
+^C
+marceldupreez@MandevilleMDP frontend % 
+marceldupreez@MandevilleMDP frontend % 
+marceldupreez@MandevilleMDP frontend % yarn dev
+yarn run v1.22.22
+$ vite
+
+  VITE v5.4.21  ready in 104 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+^C
+marceldupreez@MandevilleMDP frontend % 
+marceldupreez@MandevilleMDP frontend % yarn dev
+yarn run v1.22.22
+$ vite
+
+  VITE v5.4.21  ready in 110 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+^C
+marceldupreez@MandevilleMDP frontend % 
+marceldupreez@MandevilleMDP frontend % yarn dev
+yarn run v1.22.22
+$ vite
+
+  VITE v5.4.21  ready in 104 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+08:47:59 [vite] hmr update /src/index.css, /src/pages/Dashboard.tsx, /src/pages/Canvas.tsx, /src/components/modals/CodePreviewModal.tsx, /src/components/modals/WorkerModal.tsx, /src/components/modals/ManipulatorModal.tsx, /src/components/modals/HelperModal.tsx, /src/components/modals/ElementModal.tsx, /src/components/modals/GitHubPushModal.tsx
+08:48:11 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css
+08:48:14 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x2)
+08:48:19 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x3)
+08:48:26 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x4)
+08:48:28 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x5)
+08:48:33 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x6)
+08:48:49 [vite] hmr update /src/components/modals/ElementModal.tsx, /src/index.css
+08:48:51 [vite] hmr update /src/components/modals/ElementModal.tsx, /src/index.css (x2)
+08:48:55 [vite] hmr update /src/components/modals/ElementModal.tsx, /src/index.css (x3)
+08:48:59 [vite] hmr update /src/components/modals/ElementModal.tsx, /src/index.css (x4)
+08:49:01 [vite] hmr update /src/components/modals/ElementModal.tsx, /src/index.css (x5)
+08:49:36 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css
+08:49:37 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x2)
+08:49:42 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x3)
+08:49:42 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x4)
+08:49:53 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x5)
+08:50:41 [vite] hmr update /src/components/canvas/ComponentDetails.tsx, /src/index.css
+08:50:41 [vite] hmr update /src/components/modals/ElementModal.tsx, /src/index.css
+08:50:41 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css
+^C
+marceldupreez@MandevilleMDP frontend % 
+marceldupreez@MandevilleMDP frontend % yarn dev
+yarn run v1.22.22
+$ vite
+
+  VITE v5.4.21  ready in 103 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+^C
+marceldupreez@MandevilleMDP frontend % yarn dev
+yarn run v1.22.22
+$ vite
+
+  VITE v5.4.21  ready in 100 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+09:03:04 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css
+09:03:33 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x2)
+09:05:28 [vite] hmr update /src/pages/Canvas.tsx, /src/index.css (x3)
+09:06:12 [vite] hmr update /src/index.css, /src/pages/Canvas.tsx
+09:06:16 [vite] hmr update /src/index.css, /src/pages/Canvas.tsx (x2)
+^C
+marceldupreez@MandevilleMDP frontend % yarn dev
+yarn run v1.22.22
+$ vite
+
+  VITE v5.4.21  ready in 102 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: use --host to expose
+  ➜  press h + enter to show help
+09:07:27 [vite] hmr update /src/index.css, /src/pages/Canvas.tsx
+09:07:27 [vite] hmr update /src/index.css, /src/pages/Canvas.tsx (x2)
+09:12:42 [vite] hmr update /src/index.css, /src/pages/Dashboard.tsx, /src/pages/Canvas.tsx, /src/components/canvas/ComponentDetails.tsx, /src/components/modals/ElementModal.tsx, /src/components/modals/WorkerModal.tsx, /src/components/modals/ManipulatorModal.tsx, /src/components/modals/GitHubPushModal.tsx, /src/components/modals/HelperModal.tsx, /src/components/modals/CodePreviewModal.tsx
+09:13:13 [vite] hmr update /src/index.css, /src/pages/Dashboard.tsx, /src/pages/Canvas.tsx, /src/components/canvas/ComponentDetails.tsx, /src/components/modals/ElementModal.tsx, /src/components/modals/WorkerModal.tsx, /src/components/modals/ManipulatorModal.tsx, /src/components/modals/GitHubPushModal.tsx, /src/components/modals/HelperModal.tsx, /src/components/modals/CodePreviewModal.tsx (x2)
+
+
+
+
+
+
+
+

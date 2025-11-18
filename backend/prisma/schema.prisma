@@ -48,11 +48,30 @@ model Component {
   schema      Json     // AI-generated schema
   position    Json?    // Canvas position
   status      String   @default("draft") // 'draft', 'ready', 'error'
+  locked      Boolean  @default(false)  // Whether tests are locked
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lockedTests LockedTest[]
 
   @@map("components")
+}
+
+model LockedTest {
+  id           String   @id @default(uuid())
+  componentId  String   @map("component_id")
+  testName     String   @map("test_name")
+  description  String?
+  testFile     String   @map("test_file")
+  testType     String   @map("test_type") // 'unit', 'integration', 'e2e'
+  checksum     String   // Hash of test content for validation
+  lockedAt     DateTime @default(now()) @map("locked_at")
+  lockedBy     String   @map("locked_by")
+  
+  component    Component @relation(fields: [componentId], references: [id], onDelete: Cascade)
+
+  @@map("locked_tests")
+  @@index([componentId])
 }
 

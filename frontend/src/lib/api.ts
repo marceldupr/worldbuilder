@@ -6,11 +6,15 @@ async function getAuthToken() {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+  console.log('[API] Getting auth token:', session?.access_token ? '✅ Token exists' : '❌ No token');
   return session?.access_token;
 }
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = await getAuthToken();
+
+  console.log('[API] Request:', options.method || 'GET', url);
+  console.log('[API] Token:', token ? token.substring(0, 30) + '...' : 'None');
 
   const headers = {
     'Content-Type': 'application/json',
@@ -25,8 +29,11 @@ async function fetchWithAuth(url: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }));
+    console.error('[API] Error response:', response.status, error);
     throw new Error(error.error || `HTTP ${response.status}`);
   }
+
+  console.log('[API] Success:', response.status);
 
   if (response.status === 204) {
     return null;
@@ -76,6 +83,30 @@ export const componentsApi = {
   
   get: (id: string) => fetchWithAuth(`/api/components/${id}`),
   
+  update: (id: string, data: {
+    name?: string;
+    description?: string;
+    schema?: any;
+    position?: any;
+  }) =>
+    fetchWithAuth(`/api/components/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  
+  lock: (id: string) =>
+    fetchWithAuth(`/api/components/${id}/lock`, {
+      method: 'POST',
+    }),
+  
+  unlock: (id: string) =>
+    fetchWithAuth(`/api/components/${id}/unlock`, {
+      method: 'POST',
+    }),
+  
+  getTests: (id: string) =>
+    fetchWithAuth(`/api/components/${id}/tests`),
+  
   delete: (id: string) =>
     fetchWithAuth(`/api/components/${id}`, {
       method: 'DELETE',
@@ -98,12 +129,12 @@ export const generateApi = {
 // Code Generation
 export const codeApi = {
   generate: (projectId: string) =>
-    fetchWithAuth(`/api/projects/${projectId}/generate`, {
+    fetchWithAuth(`/api/code/generate/${projectId}`, {
       method: 'POST',
     }),
   
   preview: (projectId: string) =>
-    fetchWithAuth(`/api/projects/${projectId}/preview`),
+    fetchWithAuth(`/api/code/preview/${projectId}`),
 };
 
 // Deployment
