@@ -356,7 +356,7 @@ function CanvasContent() {
       handler: () => {
         if (nodes.length > 0) setShowCodePreview(true);
       },
-      description: 'Generate code',
+      description: 'Generate code (Ctrl+G)',
     },
     {
       key: 's',
@@ -365,17 +365,12 @@ function CanvasContent() {
         // Canvas auto-saves, just show feedback
         showToast('Canvas saved!', 'success');
       },
-      description: 'Save',
+      description: 'Save (Ctrl+S)',
     },
     {
       key: 'Delete',
       handler: handleDeleteNode,
-      description: 'Delete selected component(s)',
-    },
-    {
-      key: 'Backspace',
-      handler: handleDeleteNode,
-      description: 'Delete selected component(s)',
+      description: 'Delete selected (Delete key)',
     },
   ]);
 

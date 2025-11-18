@@ -17,6 +17,8 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
   const [selectedFile, setSelectedFile] = useState<GeneratedFile | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [magicMode, setMagicMode] = useState(false);
+  const [magicInProgress, setMagicInProgress] = useState(false);
 
   useEffect(() => {
     loadPreview();
@@ -29,10 +31,47 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
       if (result.files.length > 0) {
         setSelectedFile(result.files[0]);
       }
+      
+      // Check if code has TODOs
+      const hasTodos = result.files.some((f: GeneratedFile) => 
+        f.content.includes('TODO:') || f.content.includes('// TODO')
+      );
+      setMagicMode(!hasTodos);
     } catch (error: any) {
       showToast(error.message || 'Failed to load code preview', 'error');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleLetMagicHappen() {
+    setMagicInProgress(true);
+    try {
+      showToast('🪄 AI is analyzing your project...', 'info');
+      
+      // Call AI finalization endpoint
+      const result = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/code/finalize/${projectId}`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${await getToken()}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!result.ok) throw new Error('Finalization failed');
+
+      const data = await result.json();
+      showToast(`✨ Magic complete! Generated ${data.completions} implementations`, 'success');
+      
+      // Reload preview with finalized code
+      await loadPreview();
+    } catch (error: any) {
+      showToast(error.message || 'Failed to finalize code', 'error');
+    } finally {
+      setMagicInProgress(false);
     }
   }
 
@@ -188,6 +227,22 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
               <p className="text-sm text-gray-600">{files.length} files generated</p>
             </div>
             <div className="flex items-center space-x-3">
+              {!magicMode && (
+                <button
+                  onClick={handleLetMagicHappen}
+                  disabled={magicInProgress}
+                  className="rounded-md bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2 text-sm font-semibold text-white shadow-lg hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 flex items-center space-x-2"
+                >
+                  <span>🪄</span>
+                  <span>{magicInProgress ? 'AI Working...' : 'Let Magic Happen'}</span>
+                </button>
+              )}
+              {magicMode && (
+                <span className="flex items-center space-x-2 text-sm text-green-600 font-medium">
+                  <span>✨</span>
+                  <span>Production Ready!</span>
+                </span>
+              )}
               <button
                 onClick={handleDownload}
                 disabled={downloading}

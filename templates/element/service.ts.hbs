@@ -80,5 +80,61 @@ export class {{pascalCase name}}Service {
   async count(where?: any) {
     return await prisma.{{camelCase name}}.count({ where });
   }
+
+{{#if behaviors}}
+{{#each behaviors}}
+{{#if (eq type 'custom_method')}}
+  /**
+   * {{description}}
+   */
+  async {{camelCase name}}(id: string{{#if parameters}}, {{parameters}}{{/if}}) {
+    // TODO: Implement custom method logic
+    const entity = await this.findById(id);
+    if (!entity) {
+      throw new Error('{{../name}} not found');
+    }
+    
+    // Custom business logic here
+    
+    return entity;
+  }
+
+{{/if}}
+{{/each}}
+{{/if}}
+
+  /**
+   * Lifecycle Hooks
+   */
+{{#if behaviors}}
+{{#each behaviors}}
+{{#if (eq type 'lifecycle_hook')}}
+  async {{trigger}}(entity: any) {
+    {{#if (eq action 'triggerWorkflow')}}
+    // Trigger workflow: {{target}}
+    // TODO: Implement workflow trigger
+    console.log('Triggering workflow: {{target}}');
+    {{else if (eq action 'callAuditor')}}
+    // Call auditor: {{target}}
+    // TODO: Implement auditor call
+    console.log('Calling auditor: {{target}}');
+    {{else if (eq action 'enforceRules')}}
+    // Enforce rules: {{target}}
+    // TODO: Implement rule enforcement
+    console.log('Enforcing rules: {{target}}');
+    {{else if (eq action 'queueJob')}}
+    // Queue job: {{target}}
+    // TODO: Implement job queuing
+    console.log('Queuing job: {{target}}');
+    {{else if (eq action 'sendNotification')}}
+    // Send notification via: {{target}}
+    // TODO: Implement notification
+    console.log('Sending notification via: {{target}}');
+    {{/if}}
+  }
+
+{{/if}}
+{{/each}}
+{{/if}}
 }
 

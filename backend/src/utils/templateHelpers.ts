@@ -58,6 +58,9 @@ export const templateHelpers = {
       uuid: 'String',
       json: 'Json',
       enum: 'String',
+      image: 'String',    // URL to image
+      file: 'String',     // URL to file
+      document: 'String', // URL to document
     };
     return typeMap[type] || 'String';
   },
@@ -74,6 +77,9 @@ export const templateHelpers = {
       uuid: 'z.string().uuid()',
       json: 'z.any()',
       enum: 'z.enum([])',
+      image: 'z.string().url()',    // URL validation
+      file: 'z.string().url()',     // URL validation
+      document: 'z.string().url()', // URL validation
     };
     return zodMap[type] || 'z.string()';
   },

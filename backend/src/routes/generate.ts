@@ -92,8 +92,13 @@ For an Element component, generate a schema with:
 - behaviors: optional array of custom methods
 - indexes: suggested database indexes
 
-Types: string, integer, decimal, boolean, date, datetime, uuid, enum, json
-Validations: required, unique, min, max, minLength, maxLength, pattern, default`,
+Types: string, integer, decimal, boolean, date, datetime, uuid, enum, json, image, file, document
+Validations: required, unique, min, max, minLength, maxLength, pattern, default
+
+Special types:
+- image: stores image URL (use with file upload)
+- file: stores file URL (use with file upload) 
+- document: stores document URL (use with file upload)`,
 
     manipulator: `${basePrompt}
 

@@ -61,7 +61,31 @@ Process orders: validate inventory → charge payment → create shipment → se
 ### Helper 🔧
 Utility services and integrations (Email, Payment, Storage, etc.)
 
-**Example**: Email Helper (SendGrid), Payment Helper (Stripe)
+**Example**: Email Helper (SendGrid), Payment Helper (Stripe), Storage Helper (Supabase)
+
+### Auth 🔐
+Complete authentication system with role-based access control.
+
+**Features:**
+- Email/password, magic links, OAuth
+- Multi-factor authentication
+- Password reset flow
+- Email verification
+- Role hierarchy (guest < user < manager < admin)
+- RBAC middleware
+
+**Example**:
+```
+Authentication with Supabase
+Roles: admin, manager, user
+Features: email/password, password reset, email verification
+```
+
+**Generated:**
+- Auth endpoints (/auth/signup, /auth/login, etc.)
+- RBAC middleware (requireRole, requireAdmin)
+- Permission checks
+- Role-based route protection
 
 ### Auditor 📋
 Tracks all changes and enforces validation rules.
@@ -103,6 +127,144 @@ Can't delete User with active Orders. Order workflow: pending → payment_confir
 - Permission checks
 - Workflow state enforcement
 - Runs on create/update/delete operations
+
+### Workflow 🔄
+Multi-step process orchestration that connects multiple components.
+
+**Purpose**:
+- Orchestrates complex flows
+- Step-by-step execution
+- Error handling (retry/skip/abort)
+- Rollback support
+- 4 trigger types (HTTP, Event, Schedule, Manual)
+
+**Example**: Order Fulfillment
+```
+Trigger: HTTP /orders/fulfill
+Steps: validate inventory → charge payment → create shipment → send confirmation email → update analytics
+```
+
+**Generated:**
+- Workflow orchestrator class
+- Step execution engine
+- Error recovery
+- Timeout management
+- Uses actual component names
+
+---
+
+## 📸 **File Uploads - The Intuitive Way**
+
+### How It Works (Seamlessly!)
+
+**Step 1: Create Element with File Fields**
+```
+Element: Product
+Description: A Product with name, price, description, and images (array of image URLs for product photos)
+```
+
+**AI recognizes "images" as file field and sets type to "image"**
+
+**Step 2: Create Data API**
+When you create a Data API for Product:
+- ✅ **System auto-detects** the "images" field (type: image)
+- ✅ **Automatically enables** file upload
+- ✅ **Pre-fills** upload fields with "images"
+- ✅ Shows notification: "Auto-detected file fields: images"
+
+**Step 3: Add Storage Helper** (if not exists)
+```
+Drag Helper → Select "Storage Helper (Supabase)"
+```
+
+**Step 4: Generate Code**
+System automatically generates:
+- Upload endpoint: `POST /products/upload`
+- Multipart form-data handling
+- Integration with Storage Helper
+- File validation (size, type)
+- URL storage in database
+
+### Complete Example
+
+**1. Create Product Element:**
+```
+A Product with:
+- name (string, required)
+- price (decimal, required)
+- description (text)
+- images (array of image URLs) - for product photos
+- thumbnail (image URL) - for list view
+```
+
+**AI generates:**
+```json
+{
+  "properties": [
+    { "name": "name", "type": "string", "required": true },
+    { "name": "price", "type": "decimal", "required": true },
+    { "name": "description", "type": "string" },
+    { "name": "images", "type": "image", "isArray": true },
+    { "name": "thumbnail", "type": "image" }
+  ]
+}
+```
+
+**2. Create Product API:**
+- System detects `images` and `thumbnail` fields
+- Auto-enables file uploads ✓
+- Pre-fills: "images, thumbnail"
+- You just click Create!
+
+**3. Add Storage Helper:**
+- Drag Helper 🔧 to canvas
+- Select "Storage Helper (Supabase)"
+- Done!
+
+**4. Generate Code:**
+```typescript
+// Generated upload endpoint
+router.post('/products/upload', upload.single('file'), async (req, res) => {
+  const file = req.file;
+  const productId = req.body.productId;
+  
+  // Upload to Supabase Storage
+  const url = await storageHelper.uploadFile(
+    'products',
+    `${productId}/${file.originalname}`,
+    file.buffer
+  );
+  
+  // Update product with image URL
+  await productService.update(productId, {
+    images: [...product.images, url]
+  });
+  
+  res.json({ url });
+});
+```
+
+### Supported File Types
+
+**In Element creation, use these types:**
+- `image` - For photos, avatars, thumbnails
+- `file` - For general files
+- `document` - For PDFs, Word docs
+
+**AI understands these keywords:**
+- "avatar", "photo", "picture", "thumbnail" → type: image
+- "document", "PDF", "file", "attachment" → type: document/file
+- Always mention "for upload" or "URL" in description
+
+### Field Arrays
+
+For multiple files:
+```
+- images (array of image URLs) - for product gallery
+- attachments (array of file URLs) - for multiple documents
+```
+
+AI will set `isArray: true` automatically.
 
 ## 🔗 How Relationships Work
 

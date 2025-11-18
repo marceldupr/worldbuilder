@@ -49,6 +49,20 @@ export function ManipulatorModal({
       if (elementComponents.length > 0) {
         setLinkedElement(elementComponents[0].id);
         setName(`${elementComponents[0].name} API`);
+        
+        // Auto-detect file fields in Element
+        const hasFileFields = elementComponents[0].schema?.properties?.some(
+          (p: any) => ['image', 'file', 'document'].includes(p.type)
+        );
+        
+        if (hasFileFields) {
+          setEnableFileUpload(true);
+          const fileFields = elementComponents[0].schema.properties
+            .filter((p: any) => ['image', 'file', 'document'].includes(p.type))
+            .map((p: any) => p.name)
+            .join(', ');
+          setUploadFields(fileFields);
+        }
       }
     } catch (error: any) {
       showToast(error.message || 'Failed to load elements', 'error');
@@ -193,7 +207,27 @@ export function ManipulatorModal({
               onChange={(e) => {
                 setLinkedElement(e.target.value);
                 const el = elements.find((el) => el.id === e.target.value);
-                if (el) setName(`${el.name} API`);
+                if (el) {
+                  setName(`${el.name} API`);
+                  
+                  // Auto-detect file fields when changing element
+                  const hasFileFields = el.schema?.properties?.some(
+                    (p: any) => ['image', 'file', 'document'].includes(p.type)
+                  );
+                  
+                  if (hasFileFields) {
+                    setEnableFileUpload(true);
+                    const fileFields = el.schema.properties
+                      .filter((p: any) => ['image', 'file', 'document'].includes(p.type))
+                      .map((p: any) => p.name)
+                      .join(', ');
+                    setUploadFields(fileFields);
+                    showToast(`Auto-detected file fields: ${fileFields}`, 'info');
+                  } else {
+                    setEnableFileUpload(false);
+                    setUploadFields('');
+                  }
+                }
               }}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
             >
@@ -238,13 +272,15 @@ export function ManipulatorModal({
                   className="block w-full rounded-md border border-indigo-300 px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
                 />
                 <p className="mt-2 text-xs text-indigo-700">
+                  ✓ Auto-detected from Element properties with type "image", "file", or "document"
+                  <br />
                   ✓ Generates upload endpoints: POST /{elements.find((e) => e.id === linkedElement)?.name.toLowerCase()}/upload
                   <br />
                   ✓ Handles multipart/form-data
                   <br />
-                  ✓ Integrates with Storage Helper
+                  ✓ Integrates with Storage Helper (create one if needed!)
                   <br />
-                  ✓ Max 10MB per file
+                  ✓ Max 10MB per file, supports images/PDFs
                 </p>
               </div>
             )}
