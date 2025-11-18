@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { componentsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { Wrench, X, Check, Loader2 } from 'lucide-react';
 
 interface HelperModalProps {
   projectId: string;
@@ -185,21 +186,26 @@ export function HelperModal({
 
   if (step === 'select') {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
           <div className="mb-6">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Create Helper 🔧
-              </h2>
+              <div className="flex items-center space-x-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-yellow-500 to-yellow-600 text-white">
+                  <Wrench className="w-6 h-6" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Create Helper
+                </h2>
+              </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 leading-relaxed">
               Choose a pre-built helper or create a custom one.
             </p>
           </div>
@@ -254,11 +260,11 @@ export function HelperModal({
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">
-              Configure Helper 🔧
+              Configure Helper
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               ✕
             </button>
@@ -382,7 +388,7 @@ export function HelperModal({
           {selectedTemplate?.config && (
             <div className="rounded-lg bg-yellow-50 p-4">
               <h4 className="mb-2 text-sm font-semibold text-yellow-900">
-                ⚙️ Required Environment Variables:
+                Required Environment Variables:
               </h4>
               <div className="space-y-1">
                 {selectedTemplate.config.map((key: string) => (
@@ -405,9 +411,19 @@ export function HelperModal({
           <button
             onClick={handleCreate}
             disabled={loading || !name.trim() || !description.trim()}
-            className="rounded-md bg-yellow-600 px-6 py-2 text-sm font-semibold text-white hover:bg-yellow-500 disabled:opacity-50"
+            className="rounded-xl bg-gradient-to-r from-yellow-600 to-yellow-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-yellow-500/30 hover:shadow-xl hover:shadow-yellow-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
           >
-            {loading ? 'Creating...' : 'Create Helper ✓'}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Creating...</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Create Helper</span>
+              </>
+            )}
           </button>
         </div>
       </div>

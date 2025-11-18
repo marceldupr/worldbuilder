@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { deployApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { Github, X, Loader2, Upload } from 'lucide-react';
 
 interface GitHubPushModalProps {
   projectId: string;
@@ -46,8 +47,8 @@ export function GitHubPushModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -55,9 +56,9 @@ export function GitHubPushModal({
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
           <p className="text-sm text-gray-600">
@@ -121,7 +122,7 @@ export function GitHubPushModal({
 
           <div className="rounded-lg bg-blue-50 p-4">
             <h4 className="mb-2 text-sm font-semibold text-blue-900">
-              ℹ️ What happens next:
+              What happens next:
             </h4>
             <ul className="space-y-1 text-xs text-blue-800">
               <li>• A new repository will be created (or updated if exists)</li>
@@ -145,7 +146,17 @@ export function GitHubPushModal({
             disabled={pushing || !repoName.trim() || !githubToken.trim()}
             className="rounded-md bg-gray-900 px-6 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
           >
-            {pushing ? 'Pushing...' : '🚀 Push to GitHub'}
+            {pushing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Pushing...</span>
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                <span>Push to GitHub</span>
+              </>
+            )}
           </button>
         </div>
       </div>

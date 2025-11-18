@@ -10,10 +10,10 @@ interface WorkflowModalProps {
 }
 
 const triggerTypes = [
-  { value: 'http', label: 'HTTP Request', icon: '🌐', description: 'Triggered by API endpoint' },
-  { value: 'event', label: 'Event', icon: '⚡', description: 'Triggered by system event' },
-  { value: 'schedule', label: 'Schedule', icon: '⏰', description: 'Triggered by cron/schedule' },
-  { value: 'manual', label: 'Manual', icon: '👆', description: 'Triggered manually' },
+  { value: 'http', label: 'HTTP Request', icon: 'globe', description: 'Triggered by API endpoint' },
+  { value: 'event', label: 'Event', icon: 'zap', description: 'Triggered by system event' },
+  { value: 'schedule', label: 'Schedule', icon: 'clock', description: 'Triggered by cron/schedule' },
+  { value: 'manual', label: 'Manual', icon: 'hand', description: 'Triggered manually' },
 ];
 
 export function WorkflowModal({
@@ -107,20 +107,25 @@ export function WorkflowModal({
 
   if (step === 'describe') {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
           <div className="mb-6">
             <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 text-white">
+                <WorkflowIcon className="w-6 h-6" />
+              </div>
               <h2 className="text-2xl font-bold text-gray-900">
-                Create Workflow 🔄
+                Create Workflow
               </h2>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
             </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
             <p className="text-sm text-gray-600">
               Define a multi-step process that orchestrates multiple components.
               AI will generate the workflow logic and error handling.
@@ -196,12 +201,12 @@ export function WorkflowModal({
                       key={comp.id}
                       className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 border"
                     >
-                      {comp.type === 'element' && '🔷'}
-                      {comp.type === 'manipulator' && '🌐'}
-                      {comp.type === 'worker' && '⚙️'}
-                      {comp.type === 'helper' && '🔧'}
-                      {comp.type === 'auditor' && '📋'}
-                      {comp.type === 'enforcer' && '✅'}
+                      {comp.type === 'element' && <Database className="w-4 h-4" />}
+                      {comp.type === 'manipulator' && <Globe className="w-4 h-4" />}
+                      {comp.type === 'worker' && <Settings className="w-4 h-4" />}
+                      {comp.type === 'helper' && <Wrench className="w-4 h-4" />}
+                      {comp.type === 'auditor' && <ClipboardCheck className="w-4 h-4" />}
+                      {comp.type === 'enforcer' && <CheckCircle className="w-4 h-4" />}
                       {' '}{comp.name}
                     </span>
                   ))}
@@ -214,7 +219,7 @@ export function WorkflowModal({
 
             <div className="rounded-lg bg-purple-50 p-4">
               <h4 className="mb-2 text-sm font-semibold text-purple-900">
-                💡 Example Workflows:
+                Example Workflows:
               </h4>
               <div className="space-y-2">
                 {examples.map((example, i) => (
@@ -255,8 +260,8 @@ export function WorkflowModal({
 
   // Review step
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -264,9 +269,9 @@ export function WorkflowModal({
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
           <p className="text-sm text-gray-600">
@@ -370,7 +375,7 @@ export function WorkflowModal({
               disabled={loading}
               className="rounded-md bg-purple-600 px-6 py-2 text-sm font-semibold text-white hover:bg-purple-500 disabled:opacity-50"
             >
-              {loading ? 'Saving...' : 'Save Workflow ✓'}
+              {loading ? 'Saving...' : 'Save Workflow'}
             </button>
           </div>
         </div>

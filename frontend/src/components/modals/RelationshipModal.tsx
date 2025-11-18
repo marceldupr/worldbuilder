@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { showToast } from '../ui/toast';
+import { Link2, X, Check, Database } from 'lucide-react';
 
 interface RelationshipModalProps {
   sourceNode: any;
@@ -70,8 +71,8 @@ export function RelationshipModal({
     : targetNode.data.label.toLowerCase();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -79,9 +80,9 @@ export function RelationshipModal({
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
           <p className="text-sm text-gray-600">
@@ -94,8 +95,10 @@ export function RelationshipModal({
           <div className="flex items-center space-x-3">
             <div className="rounded-lg bg-white p-3 shadow-sm">
               <div className="text-center">
-                <div className="text-2xl">🔷</div>
-                <div className="mt-1 text-xs font-semibold">{sourceNode.data.label}</div>
+                <div className="mx-auto w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="mt-2 text-xs font-semibold">{sourceNode.data.label}</div>
               </div>
             </div>
             <div className="flex-1 text-center">
@@ -106,8 +109,10 @@ export function RelationshipModal({
             </div>
             <div className="rounded-lg bg-white p-3 shadow-sm">
               <div className="text-center">
-                <div className="text-2xl">🔷</div>
-                <div className="mt-1 text-xs font-semibold">{targetNode.data.label}</div>
+                <div className="mx-auto w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="mt-2 text-xs font-semibold">{targetNode.data.label}</div>
               </div>
             </div>
           </div>
@@ -203,7 +208,7 @@ export function RelationshipModal({
             onClick={handleSave}
             className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-500"
           >
-            Define Relationship ✓
+            Define Relationship
           </button>
         </div>
       </div>

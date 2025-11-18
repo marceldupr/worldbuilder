@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { componentsApi, projectsApi, generateApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { CheckCircle, X, Check, Loader2, Sparkles } from 'lucide-react';
 
 interface EnforcerModalProps {
   projectId: string;
@@ -20,7 +21,7 @@ const ruleTypes = [
   { 
     value: 'workflow', 
     label: 'Workflow Rule', 
-    icon: '🔄',
+    icon: 'workflow',
     example: 'Order must have payment before shipping',
   },
   { 
@@ -32,7 +33,7 @@ const ruleTypes = [
   { 
     value: 'permission', 
     label: 'Permission Rule', 
-    icon: '🔐',
+    icon: 'lock',
     example: 'Only admin can delete Products',
   },
   { 
@@ -130,20 +131,25 @@ export function EnforcerModal({
 
   if (step === 'describe') {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
           <div className="mb-6">
             <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-red-500 to-red-600 text-white">
+                <CheckCircle className="w-6 h-6" />
+              </div>
               <h2 className="text-2xl font-bold text-gray-900">
-                Create Enforcer ✅
+                Create Enforcer
               </h2>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
             </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
             <p className="text-sm text-gray-600">
               Define business rules and constraints between your components.
               AI will generate validation middleware that enforces these rules at runtime.
@@ -202,7 +208,7 @@ export function EnforcerModal({
 
             <div className="rounded-lg bg-red-50 p-4">
               <h4 className="mb-2 text-sm font-semibold text-red-900">
-                💡 Example Business Rules:
+                Example Business Rules:
               </h4>
               <div className="space-y-2">
                 {examples.map((example, i) => (
@@ -248,7 +254,7 @@ export function EnforcerModal({
             <button
               onClick={handleGenerate}
               disabled={loading || !name.trim() || !description.trim()}
-              className="rounded-md bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
+              className="rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
             >
               {loading ? 'Generating...' : 'Generate Rules with AI ✨'}
             </button>
@@ -260,8 +266,8 @@ export function EnforcerModal({
 
   // Review step
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">
@@ -269,9 +275,9 @@ export function EnforcerModal({
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
           <p className="text-sm text-gray-600">
@@ -367,9 +373,9 @@ export function EnforcerModal({
             <button
               onClick={handleSave}
               disabled={loading}
-              className="rounded-md bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50"
+              className="rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
             >
-              {loading ? 'Saving...' : 'Save Enforcer ✓'}
+              {loading ? 'Saving...' : 'Save Enforcer'}
             </button>
           </div>
         </div>

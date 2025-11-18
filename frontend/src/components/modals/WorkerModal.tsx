@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { componentsApi, projectsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { Settings, X, Check, Loader2, Plus, Trash2 } from 'lucide-react';
 
 interface WorkerModalProps {
   projectId: string;
@@ -152,18 +153,23 @@ export function WorkerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Create Worker ⚙️
-            </h2>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <Settings className="w-6 h-6" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Create Worker
+              </h2>
+            </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
           <p className="text-sm text-gray-600">
@@ -329,7 +335,7 @@ export function WorkerModal({
           {/* Examples */}
           <div className="rounded-lg bg-purple-50 p-4">
             <h4 className="mb-2 text-sm font-semibold text-purple-900">
-              💡 Example Workers:
+              Example Workers:
             </h4>
             <div className="space-y-2">
               {examples.map((example, i) => (
@@ -361,9 +367,19 @@ export function WorkerModal({
               !description.trim() ||
               !queueName.trim()
             }
-            className="rounded-md bg-purple-600 px-6 py-2 text-sm font-semibold text-white hover:bg-purple-500 disabled:opacity-50"
+            className="rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
           >
-            {loading ? 'Creating...' : 'Create Worker ✓'}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Creating...</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Create Worker</span>
+              </>
+            )}
           </button>
         </div>
       </div>

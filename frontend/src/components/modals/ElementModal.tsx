@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { generateApi, componentsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { 
+  Database, X, Sparkles, RotateCcw, Check, Trash2, 
+  Plus, Lightbulb, ChevronRight, ChevronDown, Loader2,
+  RefreshCw
+} from 'lucide-react';
 
 interface ElementModalProps {
   projectId: string;
@@ -65,7 +70,7 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
 
       setSchema(result.schema);
       setStep('review');
-      showToast(isEditing ? 'Schema updated with AI! 🔄' : 'Schema generated successfully!', 'success');
+      showToast(isEditing ? 'Schema updated with AI!' : 'Schema generated successfully!', 'success');
     } catch (error: any) {
       showToast(error.message || 'Failed to generate schema', 'error');
     } finally {
@@ -111,23 +116,28 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
         {step === 'describe' ? (
           <>
             <div className="mb-6">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {isEditing ? 'Edit Element 🔷' : 'Create Element 🔷'}
-                </h2>
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                    <Database className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {isEditing ? 'Edit Element' : 'Create Element'}
+                  </h2>
+                </div>
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 leading-relaxed">
                 {isEditing 
                   ? 'Update your element description and regenerate the schema.'
                   : 'Describe your data entity in natural language. AI will generate the schema for you.'
@@ -135,9 +145,9 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Element Name
                 </label>
                 <input
@@ -145,13 +155,13 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Product, User, Order"
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="block w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   {isEditing ? 'Changes or Improvements' : 'Description'}
                 </label>
                 <textarea
@@ -162,19 +172,25 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                     : "Describe the properties, validations, and behavior..."
                   }
                   rows={6}
-                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                  className="block w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
                 />
                 {isEditing && (
-                  <p className="mt-1 text-xs text-blue-600">
-                    💡 AI Enhancement Mode: Describe your changes and AI will intelligently merge them with the existing schema
-                  </p>
+                  <div className="mt-2 p-3 rounded-xl bg-blue-50 border border-blue-100 flex items-start space-x-2">
+                    <Lightbulb className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700 font-medium">
+                      AI Enhancement Mode: Describe your changes and AI will intelligently merge them with the existing schema
+                    </p>
+                  </div>
                 )}
               </div>
 
-              <div className="rounded-lg bg-blue-50 p-4">
-                <h4 className="mb-2 text-sm font-semibold text-blue-900">
-                  💡 {isEditing ? 'Example Changes:' : 'Examples:'}
-                </h4>
+              <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 p-5 shadow-sm">
+                <div className="flex items-start space-x-2 mb-3">
+                  <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <h4 className="text-sm font-bold text-blue-900">
+                    {isEditing ? 'Example Changes:' : 'Examples:'}
+                  </h4>
+                </div>
                 <div className="space-y-2">
                   {(isEditing ? [
                     'Add a "priority" field (low, medium, high) with default "medium"',
@@ -191,7 +207,7 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                           setName(exampleName);
                         }
                       }}
-                      className="block w-full rounded-md bg-white p-2 text-left text-xs text-gray-700 hover:bg-blue-100"
+                      className="block w-full rounded-lg bg-white p-3 text-left text-xs text-gray-700 hover:bg-blue-50 hover:shadow-sm transition-all border border-transparent hover:border-blue-200"
                     >
                       {example}
                     </button>
@@ -200,19 +216,29 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end space-x-3">
+            <div className="mt-8 flex justify-end space-x-3">
               <button
                 onClick={onClose}
-                className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={handleGenerate}
                 disabled={loading || !name.trim() || !description.trim()}
-                className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
               >
-                {loading ? (isEditing ? 'Updating...' : 'Generating...') : (isEditing ? 'Update with AI 🔄' : 'Generate with AI ✨')}
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{isEditing ? 'Updating...' : 'Generating...'}</span>
+                  </>
+                ) : (
+                  <>
+                    {isEditing ? <RefreshCw className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                    <span>{isEditing ? 'Update with AI' : 'Generate with AI'}</span>
+                  </>
+                )}
               </button>
             </div>
           </>
@@ -220,59 +246,78 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
           <>
             <div className="mb-6">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Review Schema
-                </h2>
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                    <Database className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Review Schema
+                  </h2>
+                </div>
                 <button
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  ✕
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-sm text-gray-600">
-                Review the AI-generated schema. You can regenerate or save to
-                continue.
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Review the AI-generated schema. You can regenerate or save to continue.
               </p>
             </div>
 
-            <div className="mb-6 rounded-lg bg-gray-50 p-4">
-              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+            <div className="mb-6 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 p-6 shadow-md">
+              <h3 className="mb-2 text-xl font-bold text-gray-900">
                 {name}
               </h3>
-              <p className="mb-4 text-sm text-gray-600">{description}</p>
+              <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
 
               {/* Show what changed if editing */}
               {isEditing && existingComponent.schema && (
-                <div className="mb-4 rounded-lg bg-blue-50 border border-blue-200 p-3">
-                  <h4 className="text-sm font-semibold text-blue-900 mb-2">
-                    🔄 Changes Applied by AI:
-                  </h4>
-                  <div className="text-xs text-blue-800 space-y-1">
+                <div className="mt-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 p-4 shadow-sm">
+                  <div className="flex items-start space-x-2 mb-3">
+                    <RefreshCw className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <h4 className="text-sm font-bold text-blue-900">
+                      Changes Applied by AI:
+                    </h4>
+                  </div>
+                  <div className="text-xs text-blue-800 space-y-2">
                     {schema.properties && existingComponent.schema.properties && (
                       <>
                         {schema.properties.length > existingComponent.schema.properties.length && (
-                          <div>✓ Added {schema.properties.length - existingComponent.schema.properties.length} new properties</div>
+                          <div className="flex items-center space-x-2">
+                            <Check className="w-3 h-3" />
+                            <span>Added {schema.properties.length - existingComponent.schema.properties.length} new properties</span>
+                          </div>
                         )}
                         {schema.properties.length < existingComponent.schema.properties.length && (
-                          <div>✓ Removed {existingComponent.schema.properties.length - schema.properties.length} properties</div>
+                          <div className="flex items-center space-x-2">
+                            <Check className="w-3 h-3" />
+                            <span>Removed {existingComponent.schema.properties.length - schema.properties.length} properties</span>
+                          </div>
                         )}
                         {schema.properties.length === existingComponent.schema.properties.length && (
-                          <div>✓ Updated existing properties</div>
+                          <div className="flex items-center space-x-2">
+                            <Check className="w-3 h-3" />
+                            <span>Updated existing properties</span>
+                          </div>
                         )}
                       </>
                     )}
                     {schema.relationships && (!existingComponent.schema.relationships || schema.relationships.length !== existingComponent.schema.relationships.length) && (
-                      <div>✓ Relationships preserved and updated</div>
+                      <div className="flex items-center space-x-2">
+                        <Check className="w-3 h-3" />
+                        <span>Relationships preserved and updated</span>
+                      </div>
                     )}
                   </div>
                 </div>
               )}
 
               {schema && schema.properties && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-gray-700">
+                    <h4 className="text-sm font-bold text-gray-900">
                       Properties ({schema.properties.length}):
                     </h4>
                     <button
@@ -287,12 +332,13 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                           properties: [...schema.properties, newProp],
                         });
                       }}
-                      className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                      className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
                     >
-                      + Add Property
+                      <Plus className="w-3 h-3" />
+                      <span>Add Property</span>
                     </button>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {schema.properties.map((prop: any, i: number) => {
                       const isNew = isEditing && existingComponent.schema && 
                         !existingComponent.schema.properties?.some((p: any) => p.name === prop.name);
@@ -300,12 +346,16 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                       return (
                         <div
                           key={i}
-                          className={`flex items-center justify-between rounded p-2 text-sm group hover:bg-gray-50 ${
-                            isNew ? 'bg-green-50 border border-green-200' : 'bg-white border'
+                          className={`flex items-center justify-between rounded-xl p-3 text-sm group hover:shadow-sm transition-all ${
+                            isNew ? 'bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-300' : 'bg-white border border-gray-200'
                           }`}
                         >
                           <div className="flex items-center space-x-2 flex-1">
-                            {isNew && <span className="text-green-600 text-xs font-semibold">NEW</span>}
+                            {isNew && (
+                              <span className="bg-green-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                NEW
+                              </span>
+                            )}
                             <input
                               type="text"
                               value={prop.name}
@@ -314,7 +364,7 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                                 updated[i] = { ...prop, name: e.target.value };
                                 setSchema({ ...schema, properties: updated });
                               }}
-                              className="font-medium text-gray-900 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none px-1"
+                              className="font-semibold text-gray-900 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none px-1"
                               style={{ width: `${Math.max(prop.name.length, 5)}ch` }}
                             />
                             <select
@@ -324,7 +374,7 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                                 updated[i] = { ...prop, type: e.target.value };
                                 setSchema({ ...schema, properties: updated });
                               }}
-                              className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800 border-none focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="rounded-full bg-blue-100 px-3 py-1 text-xs text-blue-700 border-none focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-semibold"
                             >
                               <option value="string">string</option>
                               <option value="integer">integer</option>
@@ -345,10 +395,10 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                                 updated[i] = { ...prop, required: !prop.required };
                                 setSchema({ ...schema, properties: updated });
                               }}
-                              className={`text-xs px-2 py-0.5 rounded ${
+                              className={`text-xs px-2.5 py-1 rounded-full font-semibold transition-colors ${
                                 prop.required
-                                  ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                                  : 'text-gray-500 bg-gray-100 hover:bg-gray-200'
+                                  ? 'text-red-700 bg-red-100 hover:bg-red-200'
+                                  : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
                               }`}
                             >
                               {prop.required ? 'required' : 'optional'}
@@ -356,7 +406,7 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                           </div>
                           <div className="flex items-center space-x-2">
                             {prop.default && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-gray-500 font-medium">
                                 default: {prop.default}
                               </span>
                             )}
@@ -367,9 +417,9 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                                   setSchema({ ...schema, properties: updated });
                                   showToast('Property removed', 'info');
                                 }}
-                                className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 text-xs"
+                                className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-all"
                               >
-                                🗑️
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             )}
                           </div>
@@ -377,9 +427,12 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                       );
                     })}
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    💡 Click property names to edit, click type badges to change type, toggle required/optional
-                  </p>
+                  <div className="mt-3 p-3 rounded-lg bg-blue-50 border border-blue-100 flex items-start space-x-2">
+                    <Lightbulb className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700 font-medium">
+                      Click property names to edit, click type badges to change type, toggle required/optional
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -399,19 +452,19 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
               )}
 
               {/* Behaviors Section */}
-              <div className="mt-4">
+              <div className="mt-5">
                 <button
                   onClick={() => setShowBehaviors(!showBehaviors)}
-                  className="flex items-center space-x-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                  className="flex items-center space-x-2 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
                 >
-                  <span>{showBehaviors ? '▼' : '▶'}</span>
+                  {showBehaviors ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   <span>Behaviors & Lifecycle Hooks ({schema.behaviors?.length || 0})</span>
                 </button>
                 
                 {showBehaviors && (
                   <div className="mt-3 space-y-3">
                     {/* Add Behavior Button */}
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       <button
                         onClick={() => {
                           const newBehavior = {
@@ -425,9 +478,10 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                             behaviors: [...(schema.behaviors || []), newBehavior],
                           });
                         }}
-                        className="rounded-lg border-2 border-dashed border-blue-300 bg-blue-50 p-2 text-xs font-medium text-blue-700 hover:border-blue-400 hover:bg-blue-100"
+                        className="rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 p-3 text-xs font-semibold text-blue-700 hover:border-blue-400 hover:bg-blue-100 hover:shadow-sm transition-all flex items-center justify-center space-x-1"
                       >
-                        + Custom Method
+                        <Plus className="w-4 h-4" />
+                        <span>Custom Method</span>
                       </button>
                       <button
                         onClick={() => {
@@ -442,9 +496,10 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                             behaviors: [...(schema.behaviors || []), newHook],
                           });
                         }}
-                        className="rounded-lg border-2 border-dashed border-purple-300 bg-purple-50 p-2 text-xs font-medium text-purple-700 hover:border-purple-400 hover:bg-purple-100"
+                        className="rounded-xl border-2 border-dashed border-purple-300 bg-purple-50 p-3 text-xs font-semibold text-purple-700 hover:border-purple-400 hover:bg-purple-100 hover:shadow-sm transition-all flex items-center justify-center space-x-1"
                       >
-                        + Lifecycle Hook
+                        <Plus className="w-4 h-4" />
+                        <span>Lifecycle Hook</span>
                       </button>
                     </div>
 
@@ -452,13 +507,13 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                     {schema.behaviors && schema.behaviors.length > 0 && (
                       <div className="space-y-2">
                         {schema.behaviors.map((behavior: any, i: number) => (
-                          <div key={i} className="rounded border p-3 bg-white group">
+                          <div key={i} className="rounded-xl border border-gray-200 p-3 bg-white group hover:shadow-sm transition-shadow">
                             <div className="flex items-start justify-between">
                               <div className="flex-1 space-y-2">
                                 {behavior.type === 'custom_method' ? (
                                   <>
                                     <div className="flex items-center space-x-2">
-                                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">
+                                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
                                         Method
                                       </span>
                                       <input
@@ -488,7 +543,7 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                                 ) : (
                                   <>
                                     <div className="flex items-center space-x-2">
-                                      <span className="rounded bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800">
+                                      <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-bold text-purple-700">
                                         Hook
                                       </span>
                                       <select
@@ -558,9 +613,9 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                                   const updated = schema.behaviors.filter((_: any, idx: number) => idx !== i);
                                   setSchema({ ...schema, behaviors: updated });
                                 }}
-                                className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700"
+                                className="opacity-0 group-hover:opacity-100 text-red-600 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-all"
                               >
-                                🗑️
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </div>
@@ -569,9 +624,12 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                     )}
 
                     {/* Behavior Examples */}
-                    <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
-                      <p className="text-xs text-blue-900 font-medium mb-2">💡 Examples:</p>
-                      <div className="text-xs text-blue-800 space-y-1">
+                    <div className="rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 p-4 shadow-sm">
+                      <div className="flex items-start space-x-2 mb-2">
+                        <Lightbulb className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-blue-900 font-bold">Examples:</p>
+                      </div>
+                      <div className="text-xs text-blue-800 space-y-1.5 font-medium">
                         <div><strong>Custom Method:</strong> Product.restock(quantity)</div>
                         <div><strong>After Create:</strong> Trigger "Welcome Workflow"</div>
                         <div><strong>Before Delete:</strong> Enforce "Deletion Rules"</div>
@@ -583,37 +641,48 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
               </div>
             </div>
 
-            <div className="rounded-lg bg-gray-100 p-4">
+            <div className="rounded-xl bg-gray-100 border border-gray-200 p-4">
               <details>
-                <summary className="cursor-pointer text-sm font-medium text-gray-700">
+                <summary className="cursor-pointer text-sm font-bold text-gray-900 hover:text-blue-600 transition-colors">
                   View JSON Schema
                 </summary>
-                <pre className="mt-2 overflow-x-auto text-xs text-gray-600">
+                <pre className="mt-3 overflow-x-auto text-xs text-gray-700 bg-white p-4 rounded-lg border border-gray-200">
                   {JSON.stringify(schema, null, 2)}
                 </pre>
               </details>
             </div>
 
-            <div className="mt-6 flex justify-between">
+            <div className="mt-8 flex justify-between">
               <button
                 onClick={handleRegenerate}
-                className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-all flex items-center space-x-2"
               >
-                ← Regenerate
+                <RotateCcw className="w-4 h-4" />
+                <span>Regenerate</span>
               </button>
               <div className="flex space-x-3">
                 <button
                   onClick={onClose}
-                  className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                  className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={loading}
-                  className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50"
+                  className="rounded-xl bg-gradient-to-r from-green-600 to-green-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
                 >
-                  {loading ? 'Saving...' : (isEditing ? 'Update Component ✓' : 'Save Component ✓')}
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>{isEditing ? 'Update Component' : 'Save Component'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

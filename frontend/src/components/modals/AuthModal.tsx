@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { componentsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { Lock, X, Check, Loader2 } from 'lucide-react';
 
 interface AuthModalProps {
   projectId: string;
@@ -10,9 +11,9 @@ interface AuthModalProps {
 }
 
 const authProviders = [
-  { value: 'supabase', label: 'Supabase', icon: '⚡', description: 'Full auth + database' },
-  { value: 'auth0', label: 'Auth0', icon: '🔐', description: 'Enterprise auth service' },
-  { value: 'jwt', label: 'JWT', icon: '🔑', description: 'Custom JWT implementation' },
+  { value: 'supabase', label: 'Supabase', icon: 'zap', description: 'Full auth + database' },
+  { value: 'auth0', label: 'Auth0', icon: 'lock', description: 'Enterprise auth service' },
+  { value: 'jwt', label: 'JWT', icon: 'key', description: 'Custom JWT implementation' },
 ];
 
 const authFeatures = [
@@ -134,18 +135,23 @@ export function AuthModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Setup Authentication 🔐
-            </h2>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 text-white">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Setup Authentication
+              </h2>
+            </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
           <p className="text-sm text-gray-600">
@@ -264,11 +270,11 @@ export function AuthModal({
                   ))}
                 </div>
                 <p className="mt-3 text-xs text-purple-700">
-                  ✓ Generates role hierarchy: {selectedRoles.join(' < ')}
+                  Generates role hierarchy: {selectedRoles.join(' < ')}
                   <br />
-                  ✓ Permission middleware for all Data APIs
+                  Permission middleware for all Data APIs
                   <br />
-                  ✓ Role-based route protection
+                  Role-based route protection
                 </p>
               </div>
             )}
@@ -315,9 +321,19 @@ export function AuthModal({
           <button
             onClick={handleCreate}
             disabled={loading || !name.trim() || selectedFeatures.length === 0}
-            className="rounded-md bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+            className="rounded-xl bg-gradient-to-r from-cyan-600 to-cyan-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 hover:shadow-xl hover:shadow-cyan-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
           >
-            {loading ? 'Creating...' : 'Create Auth System ✓'}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Creating...</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Create Auth System</span>
+              </>
+            )}
           </button>
         </div>
       </div>

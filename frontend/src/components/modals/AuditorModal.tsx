@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { componentsApi, projectsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { ClipboardCheck, X, Check, Loader2 } from 'lucide-react';
 
 interface AuditorModalProps {
   projectId: string;
@@ -127,14 +128,14 @@ export function AuditorModal({
 
   if (elements.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
           <h2 className="mb-4 text-xl font-bold text-gray-900">
-            Create Auditor 📋
+            Create Auditor
           </h2>
           <div className="rounded-lg bg-yellow-50 p-4">
             <p className="text-sm text-yellow-800">
-              ⚠️ You need to create at least one Element component first before
+              You need to create at least one Element component first before
               creating an Auditor.
             </p>
           </div>
@@ -152,18 +153,23 @@ export function AuditorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Create Auditor 📋
-            </h2>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
+                <ClipboardCheck className="w-6 h-6" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Create Auditor
+              </h2>
+            </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
           </div>
           <p className="text-sm text-gray-600">
@@ -261,13 +267,13 @@ export function AuditorModal({
             {enableValidation && (
               <div className="rounded-lg bg-green-50 p-4">
                 <p className="text-sm text-green-800">
-                  ✓ Validates required fields before create/update
+                  Validates required fields before create/update
                   <br />
-                  ✓ Enforces min/max constraints
+                  Enforces min/max constraints
                   <br />
-                  ✓ Checks business rules before operations
+                  Checks business rules before operations
                   <br />
-                  ✓ Prevents invalid data from being saved
+                  Prevents invalid data from being saved
                 </p>
               </div>
             )}
@@ -319,9 +325,19 @@ export function AuditorModal({
           <button
             onClick={handleCreate}
             disabled={loading || !name.trim() || !linkedElement || selectedEvents.length === 0}
-            className="rounded-md bg-green-600 px-6 py-2 text-sm font-semibold text-white hover:bg-green-500 disabled:opacity-50"
+            className="rounded-xl bg-gradient-to-r from-green-600 to-green-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
           >
-            {loading ? 'Creating...' : 'Create Auditor ✓'}
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Creating...</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Create Auditor</span>
+              </>
+            )}
           </button>
         </div>
       </div>
