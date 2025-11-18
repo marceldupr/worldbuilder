@@ -1,0 +1,27 @@
+import { z } from 'zod';
+
+/**
+ * {{name}} Entity
+ * {{description}}
+ */
+
+// Zod Schema for validation
+export const {{pascalCase name}}Schema = z.object({
+{{#each properties}}
+  {{camelCase name}}: {{zodType type}}{{#if required}}{{else}}.optional(){{/if}}{{#if validations}}.{{validations}}{{/if}},
+{{/each}}
+});
+
+export const Create{{pascalCase name}}Schema = {{pascalCase name}}Schema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const Update{{pascalCase name}}Schema = Create{{pascalCase name}}Schema.partial();
+
+// TypeScript Types
+export type {{pascalCase name}} = z.infer<typeof {{pascalCase name}}Schema>;
+export type Create{{pascalCase name}}Dto = z.infer<typeof Create{{pascalCase name}}Schema>;
+export type Update{{pascalCase name}}Dto = z.infer<typeof Update{{pascalCase name}}Schema>;
+

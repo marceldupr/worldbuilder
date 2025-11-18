@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  projects  Project[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  userId      String   @map("user_id")
+  canvasData  Json?    @map("canvas_data")
+  githubRepo  String?  @map("github_repo")
+  deploymentUrl String? @map("deployment_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  components  Component[]
+
+  @@map("projects")
+}
+
+model Component {
+  id          String   @id @default(uuid())
+  projectId   String   @map("project_id")
+  type        String   // 'element', 'manipulator', 'worker', 'helper', 'auditor', 'enforcer'
+  name        String
+  description String?
+  schema      Json     // AI-generated schema
+  position    Json?    // Canvas position
+  status      String   @default("draft") // 'draft', 'ready', 'error'
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("components")
+}
+

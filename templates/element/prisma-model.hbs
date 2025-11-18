@@ -1,0 +1,25 @@
+model {{pascalCase name}} {
+  id        String   @id @default(uuid())
+{{#each properties}}
+{{#if (ne name "id")}}
+  {{camelCase name}}{{#unless required}}?{{/unless}}      {{mapType type}}{{#if default}} @default({{default}}){{/if}}
+{{/if}}
+{{/each}}
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+{{#if relationships}}
+{{#each relationships}}
+  {{camelCase name}}    {{pascalCase relatedModel}}{{#if (eq cardinality "many")}}[]{{/if}}{{#if optional}}?{{/if}} @relation(fields: [{{camelCase name}}Id], references: [id])
+  {{camelCase name}}Id  String{{#if optional}}?{{/if}} @map("{{snakeCase name}}_id")
+{{/each}}
+{{/if}}
+
+{{#if indexes}}
+{{#each indexes}}
+  @@index([{{join fields ", "}}])
+{{/each}}
+{{/if}}
+  @@map("{{snakeCase (pluralize name)}}")
+}
+

@@ -1,0 +1,174 @@
+import { Router, Request, Response } from 'express';
+import { {{pascalCase linkedElement}}Service } from '../services/{{kebabCase linkedElement}}.service';
+import { Create{{pascalCase linkedElement}}Schema, Update{{pascalCase linkedElement}}Schema } from '../entities/{{kebabCase linkedElement}}.entity';
+
+const router = Router();
+const service = new {{pascalCase linkedElement}}Service();
+
+{{#if operations.create}}
+/**
+ * @swagger
+ * /{{kebabCase linkedElement}}:
+ *   post:
+ *     summary: Create a new {{linkedElement}}
+ *     tags: [{{pascalCase linkedElement}}]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Create{{pascalCase linkedElement}}'
+ *     responses:
+ *       201:
+ *         description: {{linkedElement}} created successfully
+ */
+router.post('/', async (req: Request, res: Response) => {
+  try {
+    const data = Create{{pascalCase linkedElement}}Schema.parse(req.body);
+    const result = await service.create(data);
+    res.status(201).json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+{{/if}}
+
+{{#if operations.read}}
+/**
+ * @swagger
+ * /{{kebabCase linkedElement}}:
+ *   get:
+ *     summary: List all {{pluralize linkedElement}}
+ *     tags: [{{pascalCase linkedElement}}]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of {{pluralize linkedElement}}
+ */
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      service.findAll({ skip, take: limit }),
+      service.count(),
+    ]);
+
+    res.json({
+      data: items,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /{{kebabCase linkedElement}}/{id}:
+ *   get:
+ *     summary: Get {{linkedElement}} by ID
+ *     tags: [{{pascalCase linkedElement}}]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: {{linkedElement}} found
+ *       404:
+ *         description: {{linkedElement}} not found
+ */
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const result = await service.findById(req.params.id);
+    if (!result) {
+      return res.status(404).json({ error: '{{linkedElement}} not found' });
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+{{/if}}
+
+{{#if operations.update}}
+/**
+ * @swagger
+ * /{{kebabCase linkedElement}}/{id}:
+ *   patch:
+ *     summary: Update {{linkedElement}}
+ *     tags: [{{pascalCase linkedElement}}]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Update{{pascalCase linkedElement}}'
+ *     responses:
+ *       200:
+ *         description: {{linkedElement}} updated successfully
+ */
+router.patch('/:id', async (req: Request, res: Response) => {
+  try {
+    const data = Update{{pascalCase linkedElement}}Schema.parse(req.body);
+    const result = await service.update(req.params.id, data);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+{{/if}}
+
+{{#if operations.delete}}
+/**
+ * @swagger
+ * /{{kebabCase linkedElement}}/{id}:
+ *   delete:
+ *     summary: Delete {{linkedElement}}
+ *     tags: [{{pascalCase linkedElement}}]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: {{linkedElement}} deleted successfully
+ */
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    await service.delete(req.params.id);
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+{{/if}}
+
+export default router;
+

@@ -1,0 +1,104 @@
+import { memo } from 'react';
+import { Handle, Position, NodeProps } from 'reactflow';
+
+interface ComponentNodeData {
+  label: string;
+  type: 'element' | 'manipulator' | 'worker' | 'helper' | 'auditor' | 'enforcer';
+  status?: 'draft' | 'ready' | 'error';
+  description?: string;
+}
+
+const nodeStyles = {
+  element: {
+    bg: 'bg-blue-50',
+    border: 'border-blue-400',
+    text: 'text-blue-900',
+    icon: '🔷',
+  },
+  manipulator: {
+    bg: 'bg-indigo-50',
+    border: 'border-indigo-400',
+    text: 'text-indigo-900',
+    icon: '🌐',
+  },
+  worker: {
+    bg: 'bg-purple-50',
+    border: 'border-purple-400',
+    text: 'text-purple-900',
+    icon: '⚙️',
+  },
+  helper: {
+    bg: 'bg-yellow-50',
+    border: 'border-yellow-400',
+    text: 'text-yellow-900',
+    icon: '🔧',
+  },
+  auditor: {
+    bg: 'bg-green-50',
+    border: 'border-green-400',
+    text: 'text-green-900',
+    icon: '📋',
+  },
+  enforcer: {
+    bg: 'bg-red-50',
+    border: 'border-red-400',
+    text: 'text-red-900',
+    icon: '✅',
+  },
+};
+
+const statusStyles = {
+  draft: 'bg-gray-400',
+  ready: 'bg-green-500',
+  error: 'bg-red-500',
+};
+
+export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeData>) => {
+  const style = nodeStyles[data.type] || nodeStyles.element;
+  const status = data.status || 'draft';
+
+  return (
+    <div
+      className={`rounded-lg border-2 ${style.border} ${style.bg} ${
+        selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
+      } min-w-[200px] shadow-md transition-all hover:shadow-lg`}
+    >
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!bg-gray-400"
+      />
+
+      <div className="p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="text-2xl">{style.icon}</span>
+            <div className={`h-2 w-2 rounded-full ${statusStyles[status]}`} />
+          </div>
+          <span className="rounded bg-white px-2 py-0.5 text-xs font-medium text-gray-600">
+            {data.type}
+          </span>
+        </div>
+
+        <h3 className={`text-sm font-semibold ${style.text}`}>
+          {data.label}
+        </h3>
+
+        {data.description && (
+          <p className="mt-1 text-xs text-gray-600 line-clamp-2">
+            {data.description}
+          </p>
+        )}
+      </div>
+
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="!bg-gray-400"
+      />
+    </div>
+  );
+});
+
+ComponentNode.displayName = 'ComponentNode';
+
