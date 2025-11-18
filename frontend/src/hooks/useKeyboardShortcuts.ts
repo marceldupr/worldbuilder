@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { showToast } from '../components/ui/toast';
 
 interface ShortcutHandler {
   key: string;

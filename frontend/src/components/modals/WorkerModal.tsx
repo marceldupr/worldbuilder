@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { componentsApi, projectsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
-import { Settings, X, Check, Loader2, Plus, Trash2 } from 'lucide-react';
+import { Settings, X, Check, Loader2 } from 'lucide-react';
 
 interface WorkerModalProps {
   projectId: string;

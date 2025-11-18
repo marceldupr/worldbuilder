@@ -10,13 +10,6 @@ interface EnforcerModalProps {
   onSuccess: (component: any) => void;
 }
 
-interface Rule {
-  id: string;
-  description: string;
-  components: string[];
-  ruleType: 'workflow' | 'constraint' | 'permission' | 'validation';
-}
-
 const ruleTypes = [
   { 
     value: 'workflow', 

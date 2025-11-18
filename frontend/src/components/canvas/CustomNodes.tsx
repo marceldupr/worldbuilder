@@ -132,7 +132,7 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
             <style.Icon className={`w-5 h-5 ${style.text}`} />
             <div className={`h-2 w-2 rounded-full ${statusStyles[status]}`} />
             {data.locked && (
-              <Lock className="w-4 h-4 text-purple-600" title="Tests Locked" />
+              <Lock className="w-4 h-4 text-purple-600" />
             )}
           </div>
           <span className="rounded bg-white px-2 py-0.5 text-xs font-medium text-gray-600">

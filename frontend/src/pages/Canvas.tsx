@@ -18,7 +18,7 @@ import { ComponentNode } from '../components/canvas/CustomNodes';
 import { GroupNode } from '../components/canvas/GroupNode';
 import { GroupModal } from '../components/modals/GroupModal';
 import { 
-  ArrowLeft, Code, Github, Package, Edit, Database, Globe, 
+  ArrowLeft, Code, Github, Edit, Database, Globe, 
   Settings, Wrench, Lock, ClipboardCheck, CheckCircle, Workflow as WorkflowIcon,
   FolderKanban, Trash2, Info
 } from 'lucide-react';
@@ -85,7 +85,6 @@ function CanvasContent() {
   const [editingGroup, setEditingGroup] = useState<any>(null);
   const [pendingConnection, setPendingConnection] = useState<any>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [expandedTips, setExpandedTips] = useState<Set<string>>(new Set());
   const [showAllTips, setShowAllTips] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{
@@ -566,7 +565,7 @@ function CanvasContent() {
 
   // Check if a node is being dropped into a group
   const handleNodeDragStop = useCallback(
-    (event: any, node: Node) => {
+    (_event: any, node: Node) => {
       const nodeRect = {
         x: node.position.x,
         y: node.position.y,
