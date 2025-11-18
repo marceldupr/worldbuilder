@@ -1,7 +1,0 @@
-Canvas saved
-api.ts:9 [API] Getting auth token: ✅ Token exists
-api.ts:16 [API] Request: POST /api/components/1971e3b5-45c3-4593-8435-b3ad781a1654/lock
-api.ts:17 [API] Token: eyJhbGciOiJIUzI1NiIsImtpZCI6Im...
-:3001/api/components/1971e3b5-45c3-4593-8435-b3ad781a1654/lock:1  Failed to load resource: the server responded with a status of 500 (Internal Server Error)Understand this error
-api.ts:32 [API] Error response: 500 Object
-fetchWithAuth @ api.ts:32Understand this error
