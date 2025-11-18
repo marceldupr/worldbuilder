@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { componentsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
-import { Lock, Unlock, Link2, FileText, Globe as GlobeIcon, Loader2, AlertTriangle, Info } from 'lucide-react';
+import { Lock, Unlock, Link2, FileText, Globe as GlobeIcon, Loader2, AlertTriangle } from 'lucide-react';
 
 interface ComponentDetailsProps {
   nodeId: string | null;
   nodes: any[];
+  onRequestGenerateData?: (componentId: string, componentName: string) => void;
 }
 
-export function ComponentDetails({ nodeId, nodes }: ComponentDetailsProps) {
+export function ComponentDetails({ nodeId, nodes, onRequestGenerateData }: ComponentDetailsProps) {
   const [component, setComponent] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [lockedTests, setLockedTests] = useState<any[]>([]);
@@ -48,55 +49,24 @@ export function ComponentDetails({ nodeId, nodes }: ComponentDetailsProps) {
   async function handleLockToggle() {
     if (!component) return;
     
-    setLocking(true);
-    try {
-      if (component.locked) {
+    if (component.locked) {
+      // Unlock
+      setLocking(true);
+      try {
         await componentsApi.unlock(component.id);
         showToast('Tests unlocked', 'success');
         setComponent({ ...component, locked: false });
         setLockedTests([]);
-      } else {
-        // Generate test data with AI before locking
-        const shouldGenerateData = confirm(
-          '🤖 Generate realistic test data with AI?\n\n' +
-          'AI will create sample data based on your schema for use in the generated tests.\n\n' +
-          'Click OK to generate test data, or Cancel to lock without test data.'
-        );
-
-        let testData = null;
-        if (shouldGenerateData) {
-          try {
-            showToast('Generating test data with AI...', 'info');
-            const { generateApi } = await import('../../lib/api');
-            const response = await generateApi.testData(component.id);
-            testData = response.testData;
-            showToast('Test data generated! ✨', 'success');
-          } catch (error) {
-            console.error('Failed to generate test data:', error);
-            showToast('Failed to generate test data, continuing without it', 'warning');
-          }
-        }
-
-        const result = await componentsApi.lock(component.id);
-        
-        // If we have test data, could save it to the component schema
-        if (testData) {
-          await componentsApi.update(component.id, {
-            schema: {
-              ...component.schema,
-              testData,
-            },
-          });
-        }
-        
-        showToast(`${result.testCount} tests locked! 🔒`, 'success');
-        setComponent({ ...component, locked: true });
-        await loadTests(component.id);
+      } catch (error: any) {
+        showToast(error.message || 'Failed to unlock', 'error');
+      } finally {
+        setLocking(false);
       }
-    } catch (error: any) {
-      showToast(error.message || 'Failed to toggle lock', 'error');
-    } finally {
-      setLocking(false);
+    } else {
+      // Trigger the parent modal
+      if (onRequestGenerateData) {
+        onRequestGenerateData(component.id, component.name);
+      }
     }
   }
 
@@ -325,6 +295,7 @@ export function ComponentDetails({ nodeId, nodes }: ComponentDetailsProps) {
           </div>
         </div>
       )}
+
     </div>
   );
 }

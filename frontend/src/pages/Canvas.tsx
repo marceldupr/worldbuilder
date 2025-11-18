@@ -33,6 +33,7 @@ import { AuthModal } from '../components/modals/AuthModal';
 import { CodePreviewModal } from '../components/modals/CodePreviewModal';
 import { GitHubPushModal } from '../components/modals/GitHubPushModal';
 import { RelationshipModal } from '../components/modals/RelationshipModal';
+import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { Toaster, showToast } from '../components/ui/toast';
 import { KeyboardShortcutsHelp } from '../components/ui/KeyboardShortcutsHelp';
 import { ComponentStats } from '../components/canvas/ComponentStats';
@@ -85,6 +86,17 @@ function CanvasContent() {
   const [pendingConnection, setPendingConnection] = useState<any>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const [expandedTips, setExpandedTips] = useState<Set<string>>(new Set());
+  const [showAllTips, setShowAllTips] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    type: 'component' | 'group' | 'edge';
+    id: string;
+    name: string;
+  } | null>(null);
+  const [showGenerateDataModal, setShowGenerateDataModal] = useState<{
+    componentId: string;
+    componentName: string;
+  } | null>(null);
 
   useEffect(() => {
     if (projectId) {
@@ -352,32 +364,42 @@ function CanvasContent() {
     const selectedNodes = nodes.filter((n) => n.selected);
     if (selectedNodes.length === 0) return;
 
-    const confirmDelete = confirm(
-      `Delete ${selectedNodes.length} component${selectedNodes.length > 1 ? 's' : ''}?\n\n` +
-      `This will permanently delete:\n${selectedNodes.map(n => `• ${n.data.label}`).join('\n')}\n\n` +
-      `This action cannot be undone.`
-    );
-
-    if (!confirmDelete) return;
-
+    // Show confirm modal instead of browser confirm
+    setConfirmDelete({
+      type: 'component',
+      id: selectedNodes.map(n => n.id).join(','), // Store multiple IDs
+      name: selectedNodes.length === 1 
+        ? selectedNodes[0].data.label 
+        : `${selectedNodes.length} components`
+    });
+  }, [nodes]);
+  
+  const executeDeleteComponent = async () => {
+    if (!confirmDelete || confirmDelete.type !== 'component') return;
+    
+    const nodeIds = confirmDelete.id.split(',');
+    const nodesToDelete = nodes.filter(n => nodeIds.includes(n.id));
+    
     try {
       // Delete from backend
-      for (const node of selectedNodes) {
-        await componentsApi.delete(node.id);
+      for (const nodeId of nodeIds) {
+        await componentsApi.delete(nodeId);
       }
 
       // Remove from canvas
-      setNodes((nds: Node[]) => nds.filter((n) => !n.selected));
+      setNodes((nds: Node[]) => nds.filter((n) => !nodeIds.includes(n.id)));
       setEdges((eds: Edge[]) =>
-        eds.filter((e) => !selectedNodes.some((n) => e.source === n.id || e.target === n.id))
+        eds.filter((e) => !nodeIds.some(id => e.source === id || e.target === id))
       );
 
-      showToast(`Deleted ${selectedNodes.length} component${selectedNodes.length > 1 ? 's' : ''}`, 'success');
+      showToast(`Deleted ${nodesToDelete.length} component${nodesToDelete.length > 1 ? 's' : ''}`, 'success');
       setSelectedNodeId(null);
+      setConfirmDelete(null);
     } catch (error: any) {
       showToast(error.message || 'Failed to delete component', 'error');
+      setConfirmDelete(null);
     }
-  }, [nodes, setNodes, setEdges]);
+  };
 
   // Keyboard shortcuts
   useKeyboardShortcuts([
@@ -410,6 +432,95 @@ function CanvasContent() {
     event.dataTransfer.effectAllowed = 'move';
   };
 
+  const toggleTip = (componentType: string) => {
+    setExpandedTips(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(componentType)) {
+        newSet.delete(componentType);
+      } else {
+        newSet.add(componentType);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAllTips = () => {
+    if (showAllTips) {
+      setExpandedTips(new Set());
+      setShowAllTips(false);
+    } else {
+      setExpandedTips(new Set(['element', 'manipulator', 'worker', 'helper', 'auth', 'auditor', 'enforcer', 'workflow']));
+      setShowAllTips(true);
+    }
+  };
+
+  const componentTips = {
+    element: {
+      title: "Core Data Entity",
+      tips: [
+        "Start here for data models (Users, Posts, Products)",
+        "Automatically generates database schema & API",
+        "Add fields, relationships, and validation rules"
+      ]
+    },
+    manipulator: {
+      title: "REST API Endpoints",
+      tips: [
+        "Creates CRUD endpoints for your Elements",
+        "Handles HTTP requests & responses",
+        "Perfect for frontend/mobile app integration"
+      ]
+    },
+    worker: {
+      title: "Background Jobs",
+      tips: [
+        "Handle async tasks (emails, file processing)",
+        "Runs independently from web requests",
+        "Great for scheduled or long-running operations"
+      ]
+    },
+    helper: {
+      title: "Utility Functions",
+      tips: [
+        "Reusable logic shared across components",
+        "Format data, calculations, validations",
+        "Keep your code DRY and organized"
+      ]
+    },
+    auth: {
+      title: "Authentication",
+      tips: [
+        "User login, registration, and sessions",
+        "JWT tokens and role-based access",
+        "Secure your API endpoints"
+      ]
+    },
+    auditor: {
+      title: "Logging & Monitoring",
+      tips: [
+        "Track changes and user actions",
+        "Generate audit trails for compliance",
+        "Monitor system events and errors"
+      ]
+    },
+    enforcer: {
+      title: "Business Rules",
+      tips: [
+        "Validate data and enforce constraints",
+        "Check permissions and business logic",
+        "Ensure data integrity across your app"
+      ]
+    },
+    workflow: {
+      title: "Complex Processes",
+      tips: [
+        "Orchestrate multi-step operations",
+        "Chain together multiple components",
+        "Handle complex business workflows"
+      ]
+    }
+  };
+
   const handleCreateGroup = () => {
     const centerPosition = project({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
     setDropPosition(centerPosition);
@@ -438,16 +549,19 @@ function CanvasContent() {
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
 
-    const confirmDelete = confirm(
-      `Delete group "${group.name}"?\n\n` +
-      `This will not delete the ${group.nodeIds.length} component(s) inside, just ungroup them.\n\n` +
-      `Continue?`
-    );
-
-    if (confirmDelete) {
-      removeGroup(groupId);
-      showToast('Group deleted', 'success');
-    }
+    setConfirmDelete({
+      type: 'group',
+      id: groupId,
+      name: group.name
+    });
+  };
+  
+  const executeDeleteGroup = async () => {
+    if (!confirmDelete || confirmDelete.type !== 'group') return;
+    
+    removeGroup(confirmDelete.id);
+    showToast('Group deleted', 'success');
+    setConfirmDelete(null);
   };
 
   // Check if a node is being dropped into a group
@@ -587,9 +701,9 @@ function CanvasContent() {
       </header>
 
       {/* Canvas area */}
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         {/* Component library sidebar */}
-        <aside className="w-72 border-r border-gray-200/50 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm p-4 overflow-y-auto">
+        <aside className="w-72 border-r border-gray-200/50 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm p-4 overflow-y-auto h-full">
           {/* Create Group Button */}
           <div className="mb-5">
             <button
@@ -646,42 +760,94 @@ function CanvasContent() {
             </div>
           )}
 
-          <h3 className="mb-3 text-sm font-bold text-gray-900 uppercase tracking-wide px-1">
-            Components
-          </h3>
-          <p className="mb-4 text-xs text-gray-600 px-1">
-            Drag components to the canvas
-          </p>
+          <div className="mb-4 flex items-center justify-between px-1">
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
+                Components
+              </h3>
+              <p className="text-xs text-gray-600 mt-1">
+                Drag components to the canvas
+              </p>
+            </div>
+            <button
+              onClick={toggleAllTips}
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-all flex items-center space-x-1 border border-blue-200"
+              title={showAllTips ? "Hide all tips" : "Show all tips"}
+            >
+              <Info className="w-3.5 h-3.5" />
+              <span>{showAllTips ? 'Hide' : 'Tips'}</span>
+            </button>
+          </div>
           <div className="space-y-2">
             {[
-              { name: 'Element', Icon: Database, color: 'bg-gradient-to-br from-blue-50 to-blue-100', iconColor: 'text-blue-600', ring: 'hover:ring-2 hover:ring-blue-400/50', type: 'element' },
-              { name: 'Data API', Icon: Globe, color: 'bg-gradient-to-br from-indigo-50 to-indigo-100', iconColor: 'text-indigo-600', ring: 'hover:ring-2 hover:ring-indigo-400/50', type: 'manipulator' },
-              { name: 'Worker', Icon: Settings, color: 'bg-gradient-to-br from-purple-50 to-purple-100', iconColor: 'text-purple-600', ring: 'hover:ring-2 hover:ring-purple-400/50', type: 'worker' },
-              { name: 'Helper', Icon: Wrench, color: 'bg-gradient-to-br from-yellow-50 to-yellow-100', iconColor: 'text-yellow-600', ring: 'hover:ring-2 hover:ring-yellow-400/50', type: 'helper' },
-              { name: 'Auth', Icon: Lock, color: 'bg-gradient-to-br from-cyan-50 to-cyan-100', iconColor: 'text-cyan-600', ring: 'hover:ring-2 hover:ring-cyan-400/50', type: 'auth' },
-              { name: 'Auditor', Icon: ClipboardCheck, color: 'bg-gradient-to-br from-green-50 to-green-100', iconColor: 'text-green-600', ring: 'hover:ring-2 hover:ring-green-400/50', type: 'auditor' },
-              { name: 'Enforcer', Icon: CheckCircle, color: 'bg-gradient-to-br from-red-50 to-red-100', iconColor: 'text-red-600', ring: 'hover:ring-2 hover:ring-red-400/50', type: 'enforcer' },
-              { name: 'Workflow', Icon: WorkflowIcon, color: 'bg-gradient-to-br from-pink-50 to-pink-100', iconColor: 'text-pink-600', ring: 'hover:ring-2 hover:ring-pink-400/50', type: 'workflow' },
-            ].map((component) => (
-              <div
-                key={component.name}
-                draggable
-                onDragStart={(e) => onDragStart(e, component.type)}
-                className={`${component.color} ${component.ring} cursor-move rounded-xl p-3 shadow-md transition-all hover:scale-105 hover:shadow-lg active:scale-95 border border-white/50`}
-              >
-                <div className="flex items-center space-x-3">
-                  <component.Icon className={`w-5 h-5 ${component.iconColor}`} />
-                  <span className="text-sm font-bold text-gray-900">
-                    {component.name}
-                  </span>
+              { name: 'Element', Icon: Database, color: 'bg-gradient-to-br from-blue-50 to-blue-100', iconColor: 'text-blue-600', ring: 'hover:ring-2 hover:ring-blue-400/50', type: 'element', accentColor: 'blue' },
+              { name: 'Data API', Icon: Globe, color: 'bg-gradient-to-br from-indigo-50 to-indigo-100', iconColor: 'text-indigo-600', ring: 'hover:ring-2 hover:ring-indigo-400/50', type: 'manipulator', accentColor: 'indigo' },
+              { name: 'Worker', Icon: Settings, color: 'bg-gradient-to-br from-purple-50 to-purple-100', iconColor: 'text-purple-600', ring: 'hover:ring-2 hover:ring-purple-400/50', type: 'worker', accentColor: 'purple' },
+              { name: 'Helper', Icon: Wrench, color: 'bg-gradient-to-br from-yellow-50 to-yellow-100', iconColor: 'text-yellow-600', ring: 'hover:ring-2 hover:ring-yellow-400/50', type: 'helper', accentColor: 'yellow' },
+              { name: 'Auth', Icon: Lock, color: 'bg-gradient-to-br from-cyan-50 to-cyan-100', iconColor: 'text-cyan-600', ring: 'hover:ring-2 hover:ring-cyan-400/50', type: 'auth', accentColor: 'cyan' },
+              { name: 'Auditor', Icon: ClipboardCheck, color: 'bg-gradient-to-br from-green-50 to-green-100', iconColor: 'text-green-600', ring: 'hover:ring-2 hover:ring-green-400/50', type: 'auditor', accentColor: 'green' },
+              { name: 'Enforcer', Icon: CheckCircle, color: 'bg-gradient-to-br from-red-50 to-red-100', iconColor: 'text-red-600', ring: 'hover:ring-2 hover:ring-red-400/50', type: 'enforcer', accentColor: 'red' },
+              { name: 'Workflow', Icon: WorkflowIcon, color: 'bg-gradient-to-br from-pink-50 to-pink-100', iconColor: 'text-pink-600', ring: 'hover:ring-2 hover:ring-pink-400/50', type: 'workflow', accentColor: 'pink' },
+            ].map((component) => {
+              const tipData = componentTips[component.type as keyof typeof componentTips];
+              const isExpanded = expandedTips.has(component.type);
+              
+              return (
+                <div
+                  key={component.name}
+                  className={`${component.color} rounded-xl shadow-md transition-all border border-white/50 overflow-hidden ${!isExpanded && component.ring}`}
+                >
+                  <div
+                    draggable={!isExpanded}
+                    onDragStart={(e) => !isExpanded && onDragStart(e, component.type)}
+                    className={`p-3 ${!isExpanded ? 'cursor-move hover:scale-105 active:scale-95' : 'cursor-default'} transition-all`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3 flex-1">
+                        <component.Icon className={`w-5 h-5 ${component.iconColor}`} />
+                        <span className="text-sm font-bold text-gray-900">
+                          {component.name}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTip(component.type);
+                        }}
+                        className={`${component.iconColor} hover:bg-white/50 p-1 rounded-md transition-all`}
+                        title={isExpanded ? "Hide tips" : "Show tips"}
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {isExpanded && tipData && (
+                    <div className="px-3 pb-3 pt-1 space-y-2 animate-in slide-in-from-top-2 duration-200">
+                      <div className={`text-xs font-bold ${component.iconColor} border-t border-white/60 pt-2`}>
+                        {tipData.title}
+                      </div>
+                      <ul className="space-y-1.5">
+                        {tipData.tips.map((tip, idx) => (
+                          <li key={idx} className="flex items-start space-x-2 text-xs text-gray-700">
+                            <span className={`${component.iconColor} mt-0.5 flex-shrink-0`}>•</span>
+                            <span className="leading-relaxed">{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="text-xs text-gray-500 italic pt-1 border-t border-white/40">
+                        💡 Drag to canvas when ready
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </aside>
 
         {/* Canvas */}
-        <div className="flex-1 relative" ref={reactFlowWrapper}>
+        <div className="flex-1 relative h-full" ref={reactFlowWrapper}>
           {/* Render groups as background elements */}
           {groups.map((group) => (
             <GroupNode
@@ -711,13 +877,18 @@ function CanvasContent() {
             }}
           >
             <Controls />
-            <MiniMap />
+            <MiniMap 
+              pannable 
+              zoomable
+              nodeStrokeWidth={3}
+              maskColor="rgba(0, 0, 0, 0.1)"
+            />
             <Background gap={12} size={1} />
           </ReactFlow>
         </div>
 
         {/* Properties panel */}
-        <aside className="w-80 border-l border-gray-200/50 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm p-5 overflow-y-auto">
+        <aside className="w-80 border-l border-gray-200/50 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm p-5 overflow-y-auto h-full">
           <div className="mb-6">
             <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3">
               Project Info
@@ -750,22 +921,15 @@ function CanvasContent() {
                 </h3>
                 <div className="flex items-center space-x-1">
                   <button
-                    onClick={async () => {
+                    onClick={() => {
                       const node = nodes.find(n => n.id === selectedNodeId);
                       if (!node) return;
                       
-                      const confirmDelete = confirm(`Delete ${node.data.label}?\n\nThis action cannot be undone.`);
-                      if (!confirmDelete) return;
-
-                      try {
-                        await componentsApi.delete(selectedNodeId);
-                        setNodes((nds: Node[]) => nds.filter((n) => n.id !== selectedNodeId));
-                        setEdges((eds: Edge[]) => eds.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId));
-                        showToast('Component deleted', 'success');
-                        setSelectedNodeId(null);
-                      } catch (error: any) {
-                        showToast(error.message || 'Failed to delete', 'error');
-                      }
+                      setConfirmDelete({
+                        type: 'component',
+                        id: selectedNodeId,
+                        name: node.data.label
+                      });
                     }}
                     className="text-red-600 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors"
                     title="Delete component"
@@ -780,7 +944,13 @@ function CanvasContent() {
                   </button>
                 </div>
               </div>
-              <ComponentDetails nodeId={selectedNodeId} nodes={nodes} />
+              <ComponentDetails 
+                nodeId={selectedNodeId} 
+                nodes={nodes} 
+                onRequestGenerateData={(componentId, componentName) => {
+                  setShowGenerateDataModal({ componentId, componentName });
+                }}
+              />
               <div className="mt-3 p-3 rounded-xl bg-blue-50 border border-blue-100 flex items-center space-x-2">
                 <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
                 <p className="text-xs text-blue-700 font-medium">
@@ -936,6 +1106,90 @@ function CanvasContent() {
             setEditingGroup(null);
           }}
           onSave={handleSaveGroup}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmModal
+          title={
+            confirmDelete.type === 'component' 
+              ? `Delete ${confirmDelete.name}?`
+              : `Delete Group "${confirmDelete.name}"?`
+          }
+          message={
+            confirmDelete.type === 'component'
+              ? 'This will permanently delete this component and all its connections.'
+              : 'This will delete the group but keep all components inside. They will just be ungrouped.'
+          }
+          details={
+            confirmDelete.type === 'component'
+              ? confirmDelete.id.includes(',')
+                ? confirmDelete.id.split(',').map(id => {
+                    const node = nodes.find(n => n.id === id);
+                    return node ? node.data.label : 'Unknown';
+                  })
+                : [confirmDelete.name]
+              : undefined
+          }
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant={confirmDelete.type === 'component' ? 'danger' : 'warning'}
+          onConfirm={
+            confirmDelete.type === 'component' 
+              ? executeDeleteComponent
+              : executeDeleteGroup
+          }
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {showGenerateDataModal && (
+        <ConfirmModal
+          title="Generate realistic test data with AI?"
+          message={`AI will create sample data based on the ${showGenerateDataModal.componentName} schema for use in the generated tests.`}
+          confirmText="Generate Test Data"
+          cancelText="Lock without Test Data"
+          variant="info"
+          onConfirm={async () => {
+            try {
+              showToast('Generating test data with AI...', 'info');
+              const { generateApi } = await import('../lib/api');
+              const response = await generateApi.testData(showGenerateDataModal.componentId);
+              showToast('Test data generated! ✨', 'success');
+              
+              const result = await componentsApi.lock(showGenerateDataModal.componentId);
+              
+              // Save test data to component schema
+              const component = nodes.find(n => n.id === showGenerateDataModal.componentId);
+              if (component && response.testData) {
+                await componentsApi.update(showGenerateDataModal.componentId, {
+                  schema: {
+                    ...component.data.schema,
+                    testData: response.testData,
+                  },
+                });
+              }
+              
+              showToast(`${result.testCount} tests locked! 🔒`, 'success');
+              setShowGenerateDataModal(null);
+              await loadCanvas(projectId!);
+            } catch (error: any) {
+              showToast(error.message || 'Failed to generate test data', 'error');
+              setShowGenerateDataModal(null);
+            }
+          }}
+          onCancel={async () => {
+            try {
+              const result = await componentsApi.lock(showGenerateDataModal.componentId);
+              showToast(`${result.testCount} tests locked! 🔒`, 'success');
+              setShowGenerateDataModal(null);
+              await loadCanvas(projectId!);
+            } catch (error: any) {
+              showToast(error.message || 'Failed to lock tests', 'error');
+              setShowGenerateDataModal(null);
+            }
+          }}
+          onClose={() => setShowGenerateDataModal(null)}
         />
       )}
     </div>

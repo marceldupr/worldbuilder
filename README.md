@@ -69,9 +69,11 @@ PORT=3001
 4. **Install workspace dependencies**
 
 ```bash
-# Install all workspace dependencies
-cd frontend && npm install
-cd ../backend && npm install
+# Install frontend dependencies
+cd frontend && npm install && cd ..
+
+# Install backend dependencies
+cd backend && npm install && cd ..
 ```
 
 5. **Set up database**

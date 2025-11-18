@@ -21,8 +21,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     } = await supabase.auth.getSession();
     set({ user: session?.user ?? null, loading: false });
 
-    // Listen for auth changes
-    supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('[Auth] Token auto-refreshed - user stays logged in');
+      }
       set({ user: session?.user ?? null });
     });
   },
