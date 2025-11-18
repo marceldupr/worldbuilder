@@ -1,0 +1,138 @@
+import { PrismaClient } from '@prisma/client';
+
+/**
+ * {{name}} - Audit Trail & Validation
+ * {{description}}
+ */
+
+interface AuditLogData {
+  entityType: string;
+  entityId: string;
+  action: string;
+  userId: string;
+  before: any;
+  after: any;
+  metadata?: any;
+}
+
+export class {{pascalCase name}} {
+  constructor(private prisma: PrismaClient) {}
+
+  /**
+   * Validation before creating {{linkedElement}}
+   */
+  async beforeCreate(data: any): Promise<void> {
+{{#if enableValidation}}
+    // Validate required fields
+    {{#each rules}}
+    {{#if (eq trigger 'before_create')}}
+    // {{description}}
+    {{#each validations}}
+    if (!this.validate{{pascalCase name}}(data)) {
+      throw new Error('{{../errorMessage}}');
+    }
+    {{/each}}
+    {{/if}}
+    {{/each}}
+{{/if}}
+  }
+
+  /**
+   * Audit log after creating {{linkedElement}}
+   */
+  async afterCreate(entity: any, userId: string): Promise<void> {
+{{#if (or (includes auditEvents 'created') (includes auditEvents 'all'))}}
+    await this.createAuditLog({
+      entityType: '{{linkedElement}}',
+      entityId: entity.id,
+      action: 'CREATE',
+      userId,
+      before: null,
+      after: entity,
+    });
+{{/if}}
+  }
+
+  /**
+   * Validation before updating {{linkedElement}}
+   */
+  async beforeUpdate(existing: any, updates: any): Promise<void> {
+{{#if enableValidation}}
+    {{#each rules}}
+    {{#if (eq trigger 'before_update')}}
+    // {{description}}
+    {{#each validations}}
+    if (!this.validate{{pascalCase name}}(updates)) {
+      throw new Error('{{../errorMessage}}');
+    }
+    {{/each}}
+    {{/if}}
+    {{/each}}
+{{/if}}
+  }
+
+  /**
+   * Audit log after updating {{linkedElement}}
+   */
+  async afterUpdate(before: any, after: any, userId: string): Promise<void> {
+{{#if (or (includes auditEvents 'updated') (includes auditEvents 'all'))}}
+    await this.createAuditLog({
+      entityType: '{{linkedElement}}',
+      entityId: after.id,
+      action: 'UPDATE',
+      userId,
+      before,
+      after,
+    });
+{{/if}}
+  }
+
+  /**
+   * Validation before deleting {{linkedElement}}
+   */
+  async beforeDelete(entity: any): Promise<void> {
+    // Custom business rules can be added here
+  }
+
+  /**
+   * Audit log after deleting {{linkedElement}}
+   */
+  async afterDelete(entity: any, userId: string): Promise<void> {
+{{#if (or (includes auditEvents 'deleted') (includes auditEvents 'all'))}}
+    await this.createAuditLog({
+      entityType: '{{linkedElement}}',
+      entityId: entity.id,
+      action: 'DELETE',
+      userId,
+      before: entity,
+      after: null,
+    });
+{{/if}}
+  }
+
+  /**
+   * Create audit log entry
+   */
+  private async createAuditLog(data: AuditLogData): Promise<void> {
+    await this.prisma.auditLog.create({
+      data: {
+        ...data,
+        timestamp: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Query audit logs
+   */
+  async getAuditLogs(entityId: string): Promise<any[]> {
+    return await this.prisma.auditLog.findMany({
+      where: {
+        entityType: '{{linkedElement}}',
+        entityId,
+      },
+      orderBy: { timestamp: 'desc' },
+    });
+  }
+}
+

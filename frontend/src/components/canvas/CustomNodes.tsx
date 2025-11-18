@@ -95,8 +95,11 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
         </h3>
 
         {data.description && (
-          <p className="mt-1 text-xs text-gray-600 line-clamp-2">
-            {data.description}
+          <p className="mt-1 text-xs text-gray-600 line-clamp-1">
+            {data.description.length > 60 
+              ? data.description.substring(0, 60) + '...' 
+              : data.description
+            }
           </p>
         )}
       </div>

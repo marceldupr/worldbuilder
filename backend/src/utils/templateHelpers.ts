@@ -99,6 +99,11 @@ export const templateHelpers = {
     return args.slice(0, -1).some(Boolean);
   },
 
+  includes: (arr: any[], value: any) => {
+    if (!arr || !Array.isArray(arr)) return false;
+    return arr.includes(value);
+  },
+
   // Math helpers
   multiply: (a: number, b: number) => a * b,
   divide: (a: number, b: number) => b !== 0 ? a / b : 0,

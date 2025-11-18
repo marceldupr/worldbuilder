@@ -1,0 +1,110 @@
+import { PrismaClient } from '@prisma/client';
+
+/**
+ * {{name}} - Business Rule Enforcement
+ * {{description}}
+ */
+
+export class {{pascalCase name}} {
+  constructor(private prisma: PrismaClient) {}
+
+{{#each rules}}
+  /**
+   * {{description}}
+   * Type: {{type}}
+   * Trigger: {{trigger}}
+   */
+  async enforce{{pascalCase name}}(data: any, context: any): Promise<void> {
+    {{#if (eq type 'workflow')}}
+    // Workflow enforcement: {{description}}
+    {{#if condition}}
+    if (!({{condition}})) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{/if}}
+    {{/if}}
+
+    {{#if (eq type 'constraint')}}
+    // Data constraint: {{description}}
+    {{#if condition}}
+    const violatesConstraint = !({{condition}});
+    if (violatesConstraint) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{/if}}
+    {{/if}}
+
+    {{#if (eq type 'permission')}}
+    // Permission check: {{description}}
+    if (!context.user || !this.checkPermission(context.user, '{{../components}}')) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{/if}}
+
+    {{#if (eq type 'validation')}}
+    // Cross-component validation: {{description}}
+    const isValid = await this.validate{{pascalCase name}}(data);
+    if (!isValid) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{/if}}
+  }
+
+{{/each}}
+
+  /**
+   * Permission checker
+   */
+  private checkPermission(user: any, resource: string): boolean {
+    // Implement permission logic
+    // e.g., check user.role against required permissions
+    return true; // TODO: Implement actual permission check
+  }
+
+{{#each rules}}
+{{#if (eq type 'validation')}}
+  /**
+   * Custom validation for: {{name}}
+   */
+  private async validate{{pascalCase name}}(data: any): Promise<boolean> {
+    // TODO: Implement validation logic
+    // Example: Check if referenced entities exist, validate cross-component constraints
+    return true;
+  }
+
+{{/if}}
+{{/each}}
+
+  /**
+   * Run all applicable rules for a given trigger
+   */
+  async enforceRules(trigger: string, data: any, context: any): Promise<void> {
+    const applicableRules = [
+{{#each rules}}
+      {{#if (eq trigger ../trigger)}}
+      { name: '{{name}}', enforcer: this.enforce{{pascalCase name}}.bind(this) },
+      {{/if}}
+{{/each}}
+    ];
+
+    for (const rule of applicableRules) {
+      await rule.enforcer(data, context);
+    }
+  }
+
+  /**
+   * Validate all rules without throwing (for testing)
+   */
+  async validateRules(trigger: string, data: any, context: any): Promise<{ passed: boolean; failures: string[] }> {
+    const failures: string[] = [];
+
+    try {
+      await this.enforceRules(trigger, data, context);
+      return { passed: true, failures: [] };
+    } catch (error: any) {
+      failures.push(error.message);
+      return { passed: false, failures };
+    }
+  }
+}
+

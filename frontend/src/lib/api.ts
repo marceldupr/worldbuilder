@@ -124,6 +124,12 @@ export const generateApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
+  
+  testData: (componentId: string) =>
+    fetchWithAuth('/api/generate/test-data', {
+      method: 'POST',
+      body: JSON.stringify({ componentId }),
+    }),
 };
 
 // Code Generation

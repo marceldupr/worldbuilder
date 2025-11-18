@@ -19,6 +19,8 @@ import { ElementModal } from '../components/modals/ElementModal';
 import { ManipulatorModal } from '../components/modals/ManipulatorModal';
 import { WorkerModal } from '../components/modals/WorkerModal';
 import { HelperModal } from '../components/modals/HelperModal';
+import { AuditorModal } from '../components/modals/AuditorModal';
+import { EnforcerModal } from '../components/modals/EnforcerModal';
 import { CodePreviewModal } from '../components/modals/CodePreviewModal';
 import { GitHubPushModal } from '../components/modals/GitHubPushModal';
 import { RelationshipModal } from '../components/modals/RelationshipModal';
@@ -45,6 +47,8 @@ function CanvasContent() {
   const [showManipulatorModal, setShowManipulatorModal] = useState(false);
   const [showWorkerModal, setShowWorkerModal] = useState(false);
   const [showHelperModal, setShowHelperModal] = useState(false);
+  const [showAuditorModal, setShowAuditorModal] = useState(false);
+  const [showEnforcerModal, setShowEnforcerModal] = useState(false);
   const [showCodePreview, setShowCodePreview] = useState(false);
   const [showGitHubPush, setShowGitHubPush] = useState(false);
   const [showRelationshipModal, setShowRelationshipModal] = useState(false);
@@ -209,6 +213,10 @@ function CanvasContent() {
         setShowWorkerModal(true);
       } else if (type === 'helper') {
         setShowHelperModal(true);
+      } else if (type === 'auditor') {
+        setShowAuditorModal(true);
+      } else if (type === 'enforcer') {
+        setShowEnforcerModal(true);
       }
     },
     [project]
@@ -248,6 +256,10 @@ function CanvasContent() {
             setShowWorkerModal(true);
           } else if (component.type === 'helper') {
             setShowHelperModal(true);
+          } else if (component.type === 'auditor') {
+            setShowAuditorModal(true);
+          } else if (component.type === 'enforcer') {
+            setShowEnforcerModal(true);
           }
         } catch (error: any) {
           showToast(error.message || 'Failed to load component', 'error');
@@ -286,6 +298,8 @@ function CanvasContent() {
     setShowManipulatorModal(false);
     setShowWorkerModal(false);
     setShowHelperModal(false);
+    setShowAuditorModal(false);
+    setShowEnforcerModal(false);
     setEditingComponent(null);
   };
 
@@ -333,7 +347,7 @@ function CanvasContent() {
             <div className="flex items-center space-x-2">
               <div className="text-2xl">🌍</div>
               <h1 className="text-xl font-bold text-gray-900">
-                Project {projectId}
+                {projectName || 'Loading...'}
               </h1>
             </div>
           </div>
@@ -516,6 +530,24 @@ function CanvasContent() {
 
       {showHelperModal && projectId && (
         <HelperModal
+          projectId={projectId}
+          position={dropPosition}
+          onClose={closeEditModal}
+          onSuccess={editingComponent ? handleComponentUpdated : handleElementCreated}
+        />
+      )}
+
+      {showAuditorModal && projectId && (
+        <AuditorModal
+          projectId={projectId}
+          position={dropPosition}
+          onClose={closeEditModal}
+          onSuccess={editingComponent ? handleComponentUpdated : handleElementCreated}
+        />
+      )}
+
+      {showEnforcerModal && projectId && (
+        <EnforcerModal
           projectId={projectId}
           position={dropPosition}
           onClose={closeEditModal}

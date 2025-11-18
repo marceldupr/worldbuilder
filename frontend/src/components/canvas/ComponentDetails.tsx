@@ -55,7 +55,39 @@ export function ComponentDetails({ nodeId, nodes }: ComponentDetailsProps) {
         setComponent({ ...component, locked: false });
         setLockedTests([]);
       } else {
+        // Generate test data with AI before locking
+        const shouldGenerateData = confirm(
+          '🤖 Generate realistic test data with AI?\n\n' +
+          'AI will create sample data based on your schema for use in the generated tests.\n\n' +
+          'Click OK to generate test data, or Cancel to lock without test data.'
+        );
+
+        let testData = null;
+        if (shouldGenerateData) {
+          try {
+            showToast('Generating test data with AI...', 'info');
+            const { generateApi } = await import('../../lib/api');
+            const response = await generateApi.testData(component.id);
+            testData = response.testData;
+            showToast('Test data generated! ✨', 'success');
+          } catch (error) {
+            console.error('Failed to generate test data:', error);
+            showToast('Failed to generate test data, continuing without it', 'warning');
+          }
+        }
+
         const result = await componentsApi.lock(component.id);
+        
+        // If we have test data, could save it to the component schema
+        if (testData) {
+          await componentsApi.update(component.id, {
+            schema: {
+              ...component.schema,
+              testData,
+            },
+          });
+        }
+        
         showToast(`${result.testCount} tests locked! 🔒`, 'success');
         setComponent({ ...component, locked: true });
         await loadTests(component.id);

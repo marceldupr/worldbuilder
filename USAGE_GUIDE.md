@@ -50,11 +50,59 @@ REST API endpoints that expose Element data.
 - Configure which operations to expose (CRUD)
 - Set authentication per endpoint
 
-### Worker
+### Worker ⚙️
 Background job processors for async operations.
 
-### Helper
+**Example**: Order Processing Worker
+```
+Process orders: validate inventory → charge payment → create shipment → send email
+```
+
+### Helper 🔧
 Utility services and integrations (Email, Payment, Storage, etc.)
+
+**Example**: Email Helper (SendGrid), Payment Helper (Stripe)
+
+### Auditor 📋
+Tracks all changes and enforces validation rules.
+
+**Purpose**: 
+- **Passive tracking** - Records who changed what and when
+- Stores before/after snapshots
+- Compliance and audit trails
+- Validation hooks (optional)
+
+**Example**: Task Auditor
+```
+Track all changes to Tasks. Log who created, updated, or deleted tasks with timestamps. Keep audit logs for 7 years for compliance.
+```
+
+**Generated**:
+- Audit log table in database
+- Before/after hooks on create/update/delete
+- Query API to view audit history
+- Validation middleware (optional)
+
+### Enforcer ✅
+Enforces business rules and workflows between components.
+
+**Purpose**:
+- **Active enforcement** - Prevents invalid operations
+- Cross-component validation
+- Workflow state machines
+- Permission rules
+
+**Example**: Order Rules
+```
+Can't delete User with active Orders. Order workflow: pending → payment_confirmed → shipped → delivered (can't skip steps). Only admin can cancel shipped orders. Check inventory before Order is confirmed.
+```
+
+**Generated**:
+- Validation middleware
+- Business rule engine
+- Permission checks
+- Workflow state enforcement
+- Runs on create/update/delete operations
 
 ## 🔗 How Relationships Work
 

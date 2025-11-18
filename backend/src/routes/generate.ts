@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { OpenAI } from 'openai';
 import type { AuthRequest } from '../middleware/auth.js';
+import { prisma } from '../utils/prisma.js';
 
 const router = Router();
 const openai = new OpenAI({
@@ -97,6 +98,30 @@ For a Worker component, generate a schema with:
 - retry: retry strategy (attempts, backoff)
 - timeout: job timeout in milliseconds
 - helpers: which helpers this worker uses`,
+
+    auditor: `${basePrompt}
+
+For an Auditor component, generate a schema with:
+- linkedElement: the element this auditor tracks
+- auditEvents: which events to log (created, updated, deleted, state_changed)
+- retention: how long to keep audit logs
+- rules: validation rules (before/after hooks)
+- Format: Track who made changes, when, what changed (before/after snapshots)`,
+
+    enforcer: `${basePrompt}
+
+For an Enforcer component, generate a schema with:
+- rules: array of business rules to enforce
+- Each rule should have:
+  - name: descriptive rule name
+  - type: workflow | constraint | permission | validation
+  - trigger: when the rule applies (before_create, before_update, before_delete, etc)
+  - components: which components are involved
+  - condition: what must be true
+  - errorMessage: message when rule is violated
+  - description: what the rule does
+  
+Focus on cross-component business logic, workflow enforcement, and permission rules.`,
   };
 
   return typePrompts[componentType] || basePrompt;
@@ -110,6 +135,72 @@ Description: ${description}
 
 Return a JSON schema that follows the structure defined in the system prompt.`;
 }
+
+// POST /api/generate/test-data - Generate test data for component
+router.post('/test-data', async (req: AuthRequest, res) => {
+  try {
+    const { componentId } = z.object({ componentId: z.string().uuid() }).parse(req.body);
+    
+    console.log('[Generate] Test data generation request for:', componentId);
+    
+    // Get component
+    const component = await prisma.component.findFirst({
+      where: { id: componentId },
+      include: { project: true },
+    });
+
+    if (!component || component.project.userId !== req.user!.id) {
+      return res.status(404).json({ error: 'Component not found' });
+    }
+
+    // Generate test data using AI
+    const systemPrompt = `You are a test data generator. Generate realistic test data for the given component schema.
+    
+Return a JSON object with:
+- validData: array of 3 valid test data objects
+- invalidData: array of 3 invalid test data objects (to test validation)
+- edgeCases: array of 2 edge case test data objects
+
+Make the data realistic and diverse.`;
+
+    const userPrompt = `Generate test data for ${component.name} (${component.type}) with schema:
+
+${JSON.stringify(component.schema, null, 2)}
+
+Return realistic test data that can be used in unit tests.`;
+
+    console.log('[Generate] Calling OpenAI for test data...');
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.8,
+      response_format: { type: 'json_object' },
+    });
+
+    const testDataJson = completion.choices[0]?.message?.content;
+    if (!testDataJson) {
+      throw new Error('No response from OpenAI');
+    }
+
+    const testData = JSON.parse(testDataJson);
+    console.log('[Generate] ✅ Test data generated successfully');
+
+    res.json({ testData });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      console.error('[Generate] Validation error:', error.errors);
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('[Generate] ❌ Error generating test data:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to generate test data',
+      details: error.message 
+    });
+  }
+});
 
 export { router as generateRouter };
 
