@@ -108,10 +108,10 @@ export const codeApi = {
 
 // Deployment
 export const deployApi = {
-  github: (projectId: string, repoName: string) =>
+  github: (projectId: string, repoName: string, githubToken: string, isPrivate = false) =>
     fetchWithAuth('/api/deploy/github', {
       method: 'POST',
-      body: JSON.stringify({ projectId, repoName }),
+      body: JSON.stringify({ projectId, repoName, githubToken, isPrivate }),
     }),
   
   railway: (projectId: string) =>

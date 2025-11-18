@@ -16,8 +16,11 @@ import { useAuthStore } from '../stores/authStore';
 import { useCanvasStore } from '../stores/canvasStore';
 import { ComponentNode } from '../components/canvas/CustomNodes';
 import { ElementModal } from '../components/modals/ElementModal';
+import { ManipulatorModal } from '../components/modals/ManipulatorModal';
 import { CodePreviewModal } from '../components/modals/CodePreviewModal';
+import { GitHubPushModal } from '../components/modals/GitHubPushModal';
 import { Toaster } from '../components/ui/toast';
+import { projectsApi } from '../lib/api';
 
 const nodeTypes = {
   component: ComponentNode,
@@ -32,14 +35,27 @@ function CanvasContent() {
   const { project } = useReactFlow();
   
   const [showElementModal, setShowElementModal] = useState(false);
+  const [showManipulatorModal, setShowManipulatorModal] = useState(false);
   const [showCodePreview, setShowCodePreview] = useState(false);
+  const [showGitHubPush, setShowGitHubPush] = useState(false);
+  const [projectName, setProjectName] = useState('');
   const [dropPosition, setDropPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (projectId) {
       loadCanvas(projectId);
+      loadProjectName();
     }
   }, [projectId, loadCanvas]);
+
+  async function loadProjectName() {
+    try {
+      const project = await projectsApi.get(projectId!);
+      setProjectName(project.name);
+    } catch (error) {
+      console.error('Error loading project:', error);
+    }
+  }
 
   const onNodesChange = useCallback(
     (changes: any) => {
@@ -111,6 +127,8 @@ function CanvasContent() {
 
       if (type === 'element') {
         setShowElementModal(true);
+      } else if (type === 'manipulator') {
+        setShowManipulatorModal(true);
       }
       // Add other component types here later
     },
@@ -169,8 +187,12 @@ function CanvasContent() {
             >
               💻 Generate Code
             </button>
-            <button className="rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500">
-              Deploy
+            <button
+              onClick={() => setShowGitHubPush(true)}
+              disabled={nodes.length === 0}
+              className="rounded-md bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 disabled:opacity-50"
+            >
+              🐙 Push to GitHub
             </button>
             <span className="text-sm text-gray-600">{user?.email}</span>
             <button
@@ -262,11 +284,28 @@ function CanvasContent() {
           onSuccess={handleElementCreated}
         />
       )}
+
+      {showManipulatorModal && projectId && (
+        <ManipulatorModal
+          projectId={projectId}
+          position={dropPosition}
+          onClose={() => setShowManipulatorModal(false)}
+          onSuccess={handleElementCreated}
+        />
+      )}
       
       {showCodePreview && projectId && (
         <CodePreviewModal
           projectId={projectId}
           onClose={() => setShowCodePreview(false)}
+        />
+      )}
+
+      {showGitHubPush && projectId && (
+        <GitHubPushModal
+          projectId={projectId}
+          projectName={projectName}
+          onClose={() => setShowGitHubPush(false)}
         />
       )}
     </div>
