@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { codeApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { 
+  Code, Folder, FolderOpen, FileText, FileJson, FileCode, 
+  Copy, Eye, EyeOff, Download, Sparkles, CheckCircle, Loader2,
+  X, ChevronRight, TestTube2
+} from 'lucide-react';
 
 interface CodePreviewModalProps {
   projectId: string;
@@ -12,6 +17,15 @@ interface GeneratedFile {
   content: string;
 }
 
+interface FileTreeNode {
+  name: string;
+  path?: string;
+  isDirectory: boolean;
+  children?: FileTreeNode[];
+  file?: GeneratedFile;
+  isExpanded?: boolean;
+}
+
 export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) {
   const [files, setFiles] = useState<GeneratedFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<GeneratedFile | null>(null);
@@ -19,6 +33,8 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
   const [downloading, setDownloading] = useState(false);
   const [magicMode, setMagicMode] = useState(false);
   const [magicInProgress, setMagicInProgress] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
+  const [showLineNumbers, setShowLineNumbers] = useState(true);
 
   useEffect(() => {
     loadPreview();
@@ -120,141 +136,320 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
     showToast('Copied to clipboard!', 'success');
   }
 
-  function getFileIcon(path: string): string {
-    if (path.includes('.test.ts') || path.includes('.spec.ts')) return '🧪';
-    if (path.endsWith('.ts') || path.endsWith('.tsx')) return '📘';
-    if (path.endsWith('.json')) return '📋';
-    if (path.endsWith('.md')) return '📄';
-    if (path.endsWith('.prisma')) return '🗄️';
-    if (path === 'Dockerfile') return '🐳';
-    if (path.endsWith('.yml') || path.endsWith('.yaml')) return '⚙️';
-    if (path === 'vitest.config.ts') return '⚙️';
-    return '📄';
+  function getFileIconComponent(path: string) {
+    const className = "w-4 h-4";
+    if (path.includes('.test.ts') || path.includes('.spec.ts')) return <TestTube2 className={`${className} text-purple-600`} />;
+    if (path.endsWith('.ts') || path.endsWith('.tsx')) return <FileCode className={`${className} text-blue-600`} />;
+    if (path.endsWith('.js') || path.endsWith('.jsx')) return <FileCode className={`${className} text-yellow-600`} />;
+    if (path.endsWith('.json')) return <FileJson className={`${className} text-green-600`} />;
+    if (path.endsWith('.md')) return <FileText className={`${className} text-gray-600`} />;
+    if (path.endsWith('.prisma')) return <FileCode className={`${className} text-indigo-600`} />;
+    if (path === 'Dockerfile') return <FileCode className={`${className} text-cyan-600`} />;
+    if (path.endsWith('.yml') || path.endsWith('.yaml')) return <FileCode className={`${className} text-orange-600`} />;
+    if (path === 'vitest.config.ts') return <FileCode className={`${className} text-green-600`} />;
+    if (path.endsWith('.env') || path.includes('.env.')) return <FileText className={`${className} text-amber-600`} />;
+    return <FileText className={`${className} text-gray-500`} />;
+  }
+
+  function getLanguage(path: string): string {
+    if (path.endsWith('.ts') || path.endsWith('.tsx')) return 'typescript';
+    if (path.endsWith('.js') || path.endsWith('.jsx')) return 'javascript';
+    if (path.endsWith('.json')) return 'json';
+    if (path.endsWith('.prisma')) return 'prisma';
+    if (path.endsWith('.yml') || path.endsWith('.yaml')) return 'yaml';
+    if (path.endsWith('.md')) return 'markdown';
+    return 'text';
   }
 
   function isTestFile(path: string): boolean {
     return path.includes('.test.ts') || path.includes('.spec.ts') || path.includes('__tests__') || path.includes('vitest.config');
   }
 
-  function organizeFiles(files: GeneratedFile[]) {
-    const tree: any = {};
+  function toggleFolder(path: string) {
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  }
+
+  function syntaxHighlight(code: string, language: string): JSX.Element {
+    if (!code) return <></>;
+
+    const lines = code.split('\n');
+
+    return (
+      <>
+        {lines.map((line, index) => {
+          const lineNumber = index + 1;
+          const highlightedLine = highlightLine(line, language);
+          
+          return (
+            <div key={index} className="flex hover:bg-gray-800/50">
+              {showLineNumbers && (
+                <span className="select-none pr-4 text-right text-gray-500" style={{ minWidth: '3rem' }}>
+                  {lineNumber}
+                </span>
+              )}
+              <span className="flex-1">{highlightedLine}</span>
+            </div>
+          );
+        })}
+      </>
+    );
+  }
+
+  function highlightLine(line: string, language: string): JSX.Element {
+    if (!line) return <span>&nbsp;</span>;
+
+    let highlighted = line;
+    
+    if (language === 'typescript' || language === 'javascript') {
+      // Comments
+      if (line.trim().startsWith('//')) {
+        return <span className="text-gray-500 italic">{line}</span>;
+      }
+      if (line.trim().startsWith('/*') || line.trim().startsWith('*')) {
+        return <span className="text-gray-500 italic">{line}</span>;
+      }
+
+      // Simple regex-based highlighting
+      // Keywords
+      const keywords = /\b(import|export|from|const|let|var|function|async|await|return|if|else|class|interface|type|enum|extends|implements|public|private|protected|static|readonly|new|this|super|try|catch|throw|typeof|instanceof|void|null|undefined|true|false|as|in|of|for|while|do|switch|case|break|continue|default)\b/g;
+      
+      // Strings
+      const strings = /(["'`])((?:\\.|[^\\])*?)\1/g;
+      
+      // Numbers
+      const numbers = /\b(\d+\.?\d*)\b/g;
+      
+      // Functions/Methods
+      const functions = /\b(\w+)(?=\()/g;
+      
+      // Apply highlighting (simplified approach)
+      highlighted = line
+        .replace(keywords, '<span class="text-purple-400">$1</span>')
+        .replace(strings, '<span class="text-green-400">$1$2$1</span>')
+        .replace(numbers, '<span class="text-yellow-400">$1</span>')
+        .replace(functions, '<span class="text-blue-400">$1</span>');
+      
+      return <span dangerouslySetInnerHTML={{ __html: highlighted }} />;
+    }
+    
+    if (language === 'json') {
+      // JSON highlighting
+      highlighted = line
+        .replace(/"([^"]+)":/g, '<span class="text-blue-400">"$1"</span>:')
+        .replace(/:\s*"([^"]*)"/g, ': <span class="text-green-400">"$1"</span>')
+        .replace(/:\s*(\d+\.?\d*)/g, ': <span class="text-yellow-400">$1</span>')
+        .replace(/:\s*(true|false|null)/g, ': <span class="text-purple-400">$1</span>');
+      
+      return <span dangerouslySetInnerHTML={{ __html: highlighted }} />;
+    }
+
+    return <span>{line}</span>;
+  }
+
+  function buildFileTree(files: GeneratedFile[]): FileTreeNode[] {
+    const root: FileTreeNode = {
+      name: 'root',
+      isDirectory: true,
+      children: [],
+      isExpanded: true,
+    };
 
     files.forEach((file) => {
       const parts = file.path.split('/');
-      let current = tree;
+      let current = root;
+      let currentPath = '';
 
       parts.forEach((part, index) => {
-        if (index === parts.length - 1) {
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
+        const isLastPart = index === parts.length - 1;
+
+        if (isLastPart) {
           // It's a file
-          if (!current._files) current._files = [];
-          current._files.push(file);
+          current.children!.push({
+            name: part,
+            path: file.path,
+            isDirectory: false,
+            file: file,
+          });
         } else {
           // It's a directory
-          if (!current[part]) current[part] = {};
-          current = current[part];
+          let existingDir = current.children!.find(
+            (child) => child.name === part && child.isDirectory
+          );
+
+          if (!existingDir) {
+            existingDir = {
+              name: part,
+              path: currentPath,
+              isDirectory: true,
+              children: [],
+              isExpanded: expandedFolders.has(currentPath),
+            };
+            current.children!.push(existingDir);
+          }
+
+          current = existingDir;
         }
       });
     });
 
-    return tree;
+    // Sort directories first, then files alphabetically
+    function sortNodes(nodes: FileTreeNode[]): FileTreeNode[] {
+      return nodes.sort((a, b) => {
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    function sortRecursive(node: FileTreeNode) {
+      if (node.children) {
+        node.children = sortNodes(node.children);
+        node.children.forEach(sortRecursive);
+      }
+    }
+
+    sortRecursive(root);
+    return root.children!;
   }
 
-  function renderFileTree(tree: any, level: number = 0): JSX.Element[] {
-    const elements: JSX.Element[] = [];
+  function renderFileTreeNode(node: FileTreeNode, level: number = 0): JSX.Element {
+    const isExpanded = node.path ? expandedFolders.has(node.path) : true;
+    const isSelected = selectedFile?.path === node.path;
+    const isTest = node.file && isTestFile(node.file.path);
 
-    Object.keys(tree).forEach((key) => {
-      if (key === '_files') {
-        tree[key].forEach((file: GeneratedFile) => {
-          elements.push(
-            <button
-              key={file.path}
-              onClick={() => setSelectedFile(file)}
-              className={`flex w-full items-center space-x-2 rounded px-2 py-1.5 text-left text-sm hover:bg-gray-100 ${
-                selectedFile?.path === file.path 
-                  ? isTestFile(file.path)
-                    ? 'bg-purple-50 text-purple-700'
-                    : 'bg-blue-50 text-blue-700'
-                  : 'text-gray-700'
-              } ${isTestFile(file.path) ? 'border-l-2 border-purple-400' : ''}`}
-              style={{ paddingLeft: `${(level + 1) * 16}px` }}
-            >
-              <span>{getFileIcon(file.path)}</span>
-              <span className="truncate">{file.path.split('/').pop()}</span>
-            </button>
-          );
-        });
-      } else {
-        elements.push(
-          <div key={key} style={{ paddingLeft: `${level * 16}px` }}>
-            <div className="flex items-center space-x-1 px-2 py-1 text-sm font-medium text-gray-600">
-              <span>📁</span>
-              <span>{key}</span>
+    if (node.isDirectory) {
+      return (
+        <div key={node.path || node.name}>
+          <button
+            onClick={() => node.path && toggleFolder(node.path)}
+            className="flex w-full items-center space-x-2 rounded-lg px-2 py-2 text-left text-sm hover:bg-gray-100 transition-colors group"
+            style={{ paddingLeft: `${level * 12}px` }}
+          >
+            <ChevronRight 
+              className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+            />
+            {isExpanded ? (
+              <FolderOpen className="w-4 h-4 text-blue-500" />
+            ) : (
+              <Folder className="w-4 h-4 text-gray-500" />
+            )}
+            <span className="font-semibold text-gray-700 group-hover:text-gray-900">{node.name}</span>
+            {node.children && (
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                {node.children.length}
+              </span>
+            )}
+          </button>
+          {isExpanded && node.children && (
+            <div className="space-y-0.5">
+              {node.children.map((child) => renderFileTreeNode(child, level + 1))}
             </div>
-            {renderFileTree(tree[key], level + 1)}
-          </div>
-        );
-      }
-    });
+          )}
+        </div>
+      );
+    }
 
-    return elements;
+    // File node
+    return (
+      <button
+        key={node.path}
+        onClick={() => node.file && setSelectedFile(node.file)}
+        className={`flex w-full items-center space-x-2 rounded-lg px-2 py-2 text-left text-sm transition-all ${
+          isSelected
+            ? isTest
+              ? 'bg-purple-100 text-purple-900 font-semibold shadow-sm'
+              : 'bg-blue-100 text-blue-900 font-semibold shadow-sm'
+            : 'text-gray-700 hover:bg-gray-100'
+        } ${isTest ? 'border-l-2 border-purple-400' : ''}`}
+        style={{ paddingLeft: `${level * 12 + 24}px` }}
+      >
+        {getFileIconComponent(node.name)}
+        <span className="truncate flex-1 text-sm">{node.name}</span>
+      </button>
+    );
   }
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="rounded-lg bg-white p-8 shadow-xl">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div className="rounded-2xl bg-white p-8 shadow-2xl">
           <div className="text-center">
-            <div className="mb-4 text-4xl">⚡</div>
-            <div className="text-lg font-medium">Generating code...</div>
+            <Loader2 className="w-12 h-12 animate-spin mx-auto text-blue-600 mb-4" />
+            <div className="text-lg font-bold text-gray-900">Generating code...</div>
           </div>
         </div>
       </div>
     );
   }
 
-  const fileTree = organizeFiles(files);
+  const fileTree = buildFileTree(files);
+  const testFileCount = files.filter(f => isTestFile(f.path)).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="flex h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-lg bg-white shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="flex h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* Header */}
-        <div className="border-b bg-gray-50 px-6 py-4">
+        <div className="border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">
-                Generated Code Preview
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
+                <div className="p-2 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 text-white">
+                  <Code className="w-6 h-6" />
+                </div>
+                <span>Generated Code Preview</span>
               </h2>
-              <p className="text-sm text-gray-600">{files.length} files generated</p>
+              <div className="flex items-center space-x-4 mt-2 ml-14">
+                <div className="flex items-center space-x-2">
+                  <Folder className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600 font-medium">{files.length} files</span>
+                </div>
+                {testFileCount > 0 && (
+                  <div className="flex items-center space-x-2">
+                    <TestTube2 className="w-4 h-4 text-purple-600" />
+                    <span className="text-sm text-purple-600 font-semibold">{testFileCount} tests</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-3">
               {!magicMode && (
                 <button
                   onClick={handleLetMagicHappen}
                   disabled={magicInProgress}
-                  className="rounded-md bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-2 text-sm font-semibold text-white shadow-lg hover:from-purple-500 hover:to-pink-500 disabled:opacity-50 flex items-center space-x-2"
+                  className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 flex items-center space-x-2 transition-all hover:-translate-y-0.5"
                 >
-                  <span>🪄</span>
+                  <Sparkles className="w-4 h-4" />
                   <span>{magicInProgress ? 'AI Working...' : 'Let Magic Happen'}</span>
                 </button>
               )}
               {magicMode && (
-                <span className="flex items-center space-x-2 text-sm text-green-600 font-medium">
-                  <span>✨</span>
+                <span className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-green-100 text-green-700 font-semibold text-sm">
+                  <CheckCircle className="w-4 h-4" />
                   <span>Production Ready!</span>
                 </span>
               )}
               <button
                 onClick={handleDownload}
                 disabled={downloading}
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50"
+                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 disabled:opacity-50 flex items-center space-x-2 transition-all hover:-translate-y-0.5"
               >
-                {downloading ? 'Downloading...' : '⬇️ Download ZIP'}
+                {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                <span>{downloading ? 'Downloading...' : 'Download ZIP'}</span>
               </button>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -263,57 +458,102 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
         {/* Content */}
         <div className="flex flex-1 overflow-hidden">
           {/* File tree sidebar */}
-          <div className="w-64 overflow-y-auto border-r bg-gray-50 p-4">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
-              Files ({files.length})
-            </h3>
-            
-            {/* Test files summary */}
-            {files.filter(f => isTestFile(f.path)).length > 0 && (
-              <div className="mb-3 rounded-lg bg-purple-50 border border-purple-200 p-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-purple-900">
-                    🧪 Tests
-                  </span>
-                  <span className="text-purple-700">
-                    {files.filter(f => isTestFile(f.path)).length} files
-                  </span>
+          <div className="w-72 overflow-y-auto border-r border-gray-200 bg-gradient-to-b from-gray-50 to-white">
+            <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-3 z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Folder className="w-4 h-4 text-blue-600" />
+                  <h3 className="text-xs font-bold uppercase tracking-wide text-gray-700">
+                    Project Files
+                  </h3>
                 </div>
+                <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded-full">
+                  {files.length}
+                </span>
               </div>
-            )}
+            </div>
             
-            <div className="space-y-0.5">{renderFileTree(fileTree)}</div>
+            <div className="p-3">
+              {/* Test files summary */}
+              {testFileCount > 0 && (
+                <div className="mb-4 mx-1 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 p-4 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-1.5 rounded-lg bg-purple-500 text-white">
+                        <TestTube2 className="w-4 h-4" />
+                      </div>
+                      <span className="font-bold text-purple-900 text-sm">
+                        Test Suite
+                      </span>
+                    </div>
+                    <span className="bg-purple-200 text-purple-900 text-xs font-bold px-2.5 py-1 rounded-full">
+                      {testFileCount}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-0.5">
+                {fileTree.map((node) => renderFileTreeNode(node, 0))}
+              </div>
+            </div>
           </div>
 
           {/* Code viewer */}
-          <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex flex-1 flex-col overflow-hidden bg-gray-900">
             {selectedFile ? (
               <>
-                <div className="border-b bg-white px-6 py-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{getFileIcon(selectedFile.path)}</span>
-                      <span className="font-mono text-sm text-gray-700">
-                        {selectedFile.path}
-                      </span>
+                {/* File header */}
+                <div className="border-b border-gray-700 bg-gray-800 px-6 py-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 rounded-lg bg-gray-700">
+                      {getFileIconComponent(selectedFile.path)}
                     </div>
+                    <div>
+                      <div className="font-mono text-sm text-gray-200 font-bold">
+                        {selectedFile.path}
+                      </div>
+                      <div className="flex items-center space-x-3 text-xs text-gray-400 mt-1">
+                        <span>{selectedFile.content.split('\n').length} lines</span>
+                        <span>·</span>
+                        <span className="uppercase font-semibold">{getLanguage(selectedFile.path)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setShowLineNumbers(!showLineNumbers)}
+                      className="rounded-lg bg-gray-700 px-3 py-2 text-xs font-semibold text-gray-300 hover:bg-gray-600 transition-all flex items-center space-x-1.5"
+                    >
+                      {showLineNumbers ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showLineNumbers ? 'Hide' : 'Show'} Lines</span>
+                    </button>
                     <button
                       onClick={() => copyToClipboard(selectedFile.content)}
-                      className="rounded bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                      className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 transition-all flex items-center space-x-1.5 shadow-lg shadow-blue-500/30"
                     >
-                      📋 Copy
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy</span>
                     </button>
                   </div>
                 </div>
-                <div className="flex-1 overflow-auto bg-gray-900 p-6">
-                  <pre className="font-mono text-sm text-gray-100">
-                    <code>{selectedFile.content}</code>
+                
+                {/* Code content with syntax highlighting */}
+                <div className="flex-1 overflow-auto">
+                  <pre className="p-6 font-mono text-sm leading-relaxed text-gray-100">
+                    {syntaxHighlight(selectedFile.content, getLanguage(selectedFile.path))}
                   </pre>
                 </div>
               </>
             ) : (
-              <div className="flex flex-1 items-center justify-center text-gray-500">
-                Select a file to view its contents
+              <div className="flex flex-1 flex-col items-center justify-center text-gray-400">
+                <div className="w-20 h-20 rounded-2xl bg-gray-800 flex items-center justify-center mb-4">
+                  <FileCode className="w-10 h-10 text-gray-600" />
+                </div>
+                <div className="text-lg font-bold text-gray-300">Select a file to view</div>
+                <div className="text-sm text-gray-500 mt-2">
+                  Choose a file from the tree to see its contents
+                </div>
               </div>
             )}
           </div>

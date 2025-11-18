@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { projectsApi } from '../lib/api';
 import { showToast, Toaster } from '../components/ui/toast';
+import { Plus, Trash2, Package, Loader2 } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -74,23 +75,29 @@ export function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20">
       <Toaster />
       {/* Header */}
-      <header className="border-b bg-white shadow-sm">
+      <header className="border-b border-gray-200/50 bg-white/80 backdrop-blur-lg shadow-sm sticky top-0 z-10">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="text-3xl">🌍</div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center shadow-lg">
+                <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Worldbuilder
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">{user?.email}</span>
+              <span className="text-sm font-medium text-gray-600 bg-gray-100/50 px-3 py-1.5 rounded-full">
+                {user?.email}
+              </span>
               <button
                 onClick={signOut}
-                className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                className="rounded-full bg-gray-100 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-all hover:shadow-md"
               >
                 Sign out
               </button>
@@ -104,26 +111,27 @@ export function Dashboard() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">My Projects</h2>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-gray-600">
               Create and manage your applications
             </p>
           </div>
           <button
             onClick={() => setShowNewProject(true)}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
+            className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
           >
-            + New Project
+            <Plus className="w-4 h-4" />
+            <span>New Project</span>
           </button>
         </div>
 
         {/* New project modal */}
         {showNewProject && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-              <h3 className="mb-4 text-xl font-bold">Create New Project</h3>
-              <div className="space-y-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
+              <h3 className="mb-6 text-2xl font-bold text-gray-900">Create New Project</h3>
+              <div className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Project Name
                   </label>
                   <input
@@ -131,12 +139,12 @@ export function Dashboard() {
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                     placeholder="My Awesome App"
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                     autoFocus
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Description (optional)
                   </label>
                   <textarea
@@ -144,24 +152,24 @@ export function Dashboard() {
                     onChange={(e) => setNewProjectDescription(e.target.value)}
                     placeholder="What does this app do?"
                     rows={3}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
                   />
                 </div>
               </div>
-              <div className="mt-6 flex justify-end space-x-3">
+              <div className="mt-8 flex justify-end space-x-3">
                 <button
                   onClick={() => setShowNewProject(false)}
                   disabled={creating}
-                  className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                  className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-50 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={createProject}
                   disabled={!newProjectName.trim() || creating}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 disabled:opacity-50"
+                  className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5"
                 >
-                  {creating ? 'Creating...' : 'Create'}
+                  {creating ? 'Creating...' : 'Create Project'}
                 </button>
               </div>
             </div>
@@ -170,21 +178,27 @@ export function Dashboard() {
 
         {/* Projects grid */}
         {loading ? (
-          <div className="text-center text-gray-600">Loading projects...</div>
+          <div className="text-center text-gray-600">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-blue-600" />
+            <p className="mt-4 font-medium">Loading projects...</p>
+          </div>
         ) : projects.length === 0 ? (
-          <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-            <div className="text-4xl">📦</div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
+          <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-white/50 backdrop-blur-sm p-12 text-center">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center mb-4">
+              <Package className="w-8 h-8 text-blue-600" />
+            </div>
+            <h3 className="text-xl font-bold text-gray-900">
               No projects yet
             </h3>
-            <p className="mt-2 text-sm text-gray-600">
-              Get started by creating your first project
+            <p className="mt-2 text-sm text-gray-600 max-w-sm mx-auto">
+              Get started by creating your first project and bring your ideas to life
             </p>
             <button
               onClick={() => setShowNewProject(true)}
-              className="mt-6 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500"
+              className="mt-8 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all hover:-translate-y-0.5 inline-flex items-center space-x-2"
             >
-              Create Project
+              <Plus className="w-5 h-5" />
+              <span>Create Your First Project</span>
             </button>
           </div>
         ) : (
@@ -193,28 +207,31 @@ export function Dashboard() {
               <div
                 key={project.id}
                 onClick={() => navigate(`/project/${project.id}`)}
-                className="group cursor-pointer rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+                className="group cursor-pointer rounded-2xl border border-gray-200 bg-white p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
               >
-                <div className="flex items-start justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {project.name}
-                  </h3>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                      {project.name}
+                    </h3>
+                  </div>
                   <button
                     onClick={(e) => deleteProject(project.id, e)}
-                    className="opacity-0 text-gray-400 hover:text-red-600 group-hover:opacity-100 transition-opacity"
+                    className="opacity-0 text-gray-400 hover:text-red-600 group-hover:opacity-100 transition-all rounded-lg p-1.5 hover:bg-red-50"
                   >
-                    🗑️
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                <p className="text-sm text-gray-600 line-clamp-2 min-h-[2.5rem]">
                   {project.description || 'No description'}
                 </p>
-                <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-                  <span>
-                    {project._count?.components || 0} components
+                <div className="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
+                  <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+                    <Package className="w-3 h-3" />
+                    <span>{project._count?.components || 0} components</span>
                   </span>
-                  <span>
-                    Updated {new Date(project.updatedAt).toLocaleDateString()}
+                  <span className="text-xs text-gray-500 font-medium">
+                    {new Date(project.updatedAt).toLocaleDateString()}
                   </span>
                 </div>
               </div>

@@ -1,105 +1,111 @@
+import { 
+  Database, Globe, Settings, Wrench, Lock, ClipboardCheck, 
+  CheckCircle, Workflow, LucideIcon
+} from 'lucide-react';
+
 interface ComponentStatsProps {
   components: Array<{ type: string }>;
 }
 
+const componentTypes: Record<string, { 
+  label: string; 
+  Icon: LucideIcon; 
+  color: string;
+  bgColor: string;
+}> = {
+  element: { 
+    label: 'Elements', 
+    Icon: Database, 
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50'
+  },
+  manipulator: { 
+    label: 'APIs', 
+    Icon: Globe, 
+    color: 'text-indigo-600',
+    bgColor: 'bg-indigo-50'
+  },
+  worker: { 
+    label: 'Workers', 
+    Icon: Settings, 
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-50'
+  },
+  helper: { 
+    label: 'Helpers', 
+    Icon: Wrench, 
+    color: 'text-yellow-600',
+    bgColor: 'bg-yellow-50'
+  },
+  auth: { 
+    label: 'Auth', 
+    Icon: Lock, 
+    color: 'text-cyan-600',
+    bgColor: 'bg-cyan-50'
+  },
+  auditor: { 
+    label: 'Auditors', 
+    Icon: ClipboardCheck, 
+    color: 'text-green-600',
+    bgColor: 'bg-green-50'
+  },
+  enforcer: { 
+    label: 'Enforcers', 
+    Icon: CheckCircle, 
+    color: 'text-red-600',
+    bgColor: 'bg-red-50'
+  },
+  workflow: { 
+    label: 'Workflows', 
+    Icon: Workflow, 
+    color: 'text-pink-600',
+    bgColor: 'bg-pink-50'
+  },
+};
+
 export function ComponentStats({ components }: ComponentStatsProps) {
-  const stats = {
-    element: components.filter((c) => c.type === 'element').length,
-    manipulator: components.filter((c) => c.type === 'manipulator').length,
-    worker: components.filter((c) => c.type === 'worker').length,
-    helper: components.filter((c) => c.type === 'helper').length,
-    auth: components.filter((c) => c.type === 'auth').length,
-    auditor: components.filter((c) => c.type === 'auditor').length,
-    enforcer: components.filter((c) => c.type === 'enforcer').length,
-    workflow: components.filter((c) => c.type === 'workflow').length,
-  };
+  const stats = Object.keys(componentTypes).reduce((acc, type) => {
+    acc[type] = components.filter((c) => c.type === type).length;
+    return acc;
+  }, {} as Record<string, number>);
 
   const total = components.length;
 
   if (total === 0) return null;
 
   return (
-    <div className="rounded-lg border bg-white p-4 shadow-sm">
-      <h4 className="mb-3 text-sm font-semibold text-gray-700">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-md">
+      <h4 className="mb-4 text-sm font-bold text-gray-900 uppercase tracking-wide">
         Component Summary
       </h4>
       <div className="space-y-2">
-        {stats.element > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center space-x-2">
-              <span>🔷</span>
-              <span className="text-gray-600">Elements</span>
+        {Object.entries(componentTypes).map(([type, config]) => {
+          const count = stats[type];
+          if (count === 0) return null;
+          
+          return (
+            <div 
+              key={type}
+              className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition-colors"
+            >
+              <span className="flex items-center space-x-3">
+                <div className={`${config.bgColor} p-1.5 rounded-lg`}>
+                  <config.Icon className={`w-4 h-4 ${config.color}`} />
+                </div>
+                <span className="text-sm font-medium text-gray-700">{config.label}</span>
+              </span>
+              <span className={`font-bold text-sm ${config.color} px-2.5 py-1 rounded-full ${config.bgColor}`}>
+                {count}
+              </span>
+            </div>
+          );
+        })}
+        <div className="border-t border-gray-200 mt-3 pt-3">
+          <div className="flex items-center justify-between px-2">
+            <span className="text-sm font-bold text-gray-900">Total</span>
+            <span className="font-bold text-base bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              {total}
             </span>
-            <span className="font-semibold text-blue-600">{stats.element}</span>
-          </div>
-        )}
-        {stats.manipulator > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center space-x-2">
-              <span>🌐</span>
-              <span className="text-gray-600">APIs</span>
-            </span>
-            <span className="font-semibold text-indigo-600">{stats.manipulator}</span>
-          </div>
-        )}
-        {stats.worker > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center space-x-2">
-              <span>⚙️</span>
-              <span className="text-gray-600">Workers</span>
-            </span>
-            <span className="font-semibold text-purple-600">{stats.worker}</span>
-          </div>
-        )}
-        {stats.helper > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center space-x-2">
-              <span>🔧</span>
-              <span className="text-gray-600">Helpers</span>
-            </span>
-            <span className="font-semibold text-yellow-600">{stats.helper}</span>
-          </div>
-        )}
-        {stats.auth > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center space-x-2">
-              <span>🔐</span>
-              <span className="text-gray-600">Auth</span>
-            </span>
-            <span className="font-semibold text-cyan-600">{stats.auth}</span>
-          </div>
-        )}
-        {stats.auditor > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center space-x-2">
-              <span>📋</span>
-              <span className="text-gray-600">Auditors</span>
-            </span>
-            <span className="font-semibold text-green-600">{stats.auditor}</span>
-          </div>
-        )}
-        {stats.enforcer > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center space-x-2">
-              <span>✅</span>
-              <span className="text-gray-600">Enforcers</span>
-            </span>
-            <span className="font-semibold text-red-600">{stats.enforcer}</span>
-          </div>
-        )}
-        {stats.workflow > 0 && (
-          <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center space-x-2">
-              <span>🔄</span>
-              <span className="text-gray-600">Workflows</span>
-            </span>
-            <span className="font-semibold text-pink-600">{stats.workflow}</span>
-          </div>
-        )}
-        <div className="border-t pt-2">
-          <div className="flex items-center justify-between text-sm font-semibold">
-            <span className="text-gray-700">Total</span>
-            <span className="text-gray-900">{total}</span>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { componentsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { Lock, Unlock, Link2, FileText, Globe as GlobeIcon, Loader2, AlertTriangle, Info } from 'lucide-react';
 
 interface ComponentDetailsProps {
   nodeId: string | null;
@@ -101,16 +102,22 @@ export function ComponentDetails({ nodeId, nodes }: ComponentDetailsProps) {
 
   if (!nodeId || !component) {
     return (
-      <div className="text-center text-sm text-gray-500 py-8">
-        Click on a component to view details
+      <div className="rounded-2xl border-2 border-dashed border-gray-300 bg-white/50 p-8 text-center">
+        <div className="mx-auto w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
+          <FileText className="w-6 h-6 text-gray-400" />
+        </div>
+        <p className="text-sm text-gray-500 font-medium">
+          Click on a component to view details
+        </p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="text-center text-sm text-gray-500 py-8">
-        Loading...
+      <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center">
+        <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-600 mb-3" />
+        <p className="text-sm text-gray-500 font-medium">Loading...</p>
       </div>
     );
   }
@@ -135,39 +142,39 @@ export function ComponentDetails({ nodeId, nodes }: ComponentDetailsProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-white p-4 shadow-sm border">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">{component.name}</h3>
-          <span className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+      <div className="rounded-2xl bg-white p-5 shadow-md border border-gray-200">
+        <div className="mb-4 flex items-start justify-between">
+          <h3 className="font-bold text-gray-900 text-base">{component.name}</h3>
+          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">
             {component.type}
           </span>
         </div>
         
         {component.description && (
-          <p className="text-sm text-gray-600 mb-3">{component.description}</p>
+          <p className="text-sm text-gray-600 mb-4 leading-relaxed">{component.description}</p>
         )}
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
           <div className="flex items-center space-x-2">
-            <div className={`h-2 w-2 rounded-full ${
+            <div className={`h-2.5 w-2.5 rounded-full ${
               component.status === 'ready' ? 'bg-green-500' :
               component.status === 'error' ? 'bg-red-500' :
               'bg-gray-400'
-            }`} />
-            <span className="text-xs text-gray-500 capitalize">{component.status}</span>
+            } shadow-sm`} />
+            <span className="text-xs font-semibold text-gray-600 capitalize">{component.status}</span>
           </div>
           
           {(component.type === 'element' || component.type === 'manipulator') && (
             <button
               onClick={handleLockToggle}
               disabled={locking}
-              className={`flex items-center space-x-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
+              className={`flex items-center space-x-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
                 component.locked
-                  ? 'bg-purple-100 text-purple-800 hover:bg-purple-200'
+                  ? 'bg-purple-500 text-white hover:bg-purple-600 shadow-md'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               } disabled:opacity-50`}
             >
-              <span>{component.locked ? '🔒' : '🔓'}</span>
+              {component.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
               <span>{component.locked ? 'Locked' : 'Lock Tests'}</span>
             </button>
           )}
@@ -176,70 +183,87 @@ export function ComponentDetails({ nodeId, nodes }: ComponentDetailsProps) {
 
       {/* Locked Tests */}
       {component.locked && lockedTests.length > 0 && (
-        <div className="rounded-lg bg-purple-50 p-4 border border-purple-200">
-          <div className="mb-2 flex items-center justify-between">
-            <h4 className="text-sm font-semibold text-purple-900">
-              🔒 Locked Tests ({lockedTests.length})
+        <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 p-5 border border-purple-200 shadow-md">
+          <div className="mb-3 flex items-center space-x-2">
+            <div className="p-2 rounded-lg bg-purple-500 text-white">
+              <Lock className="w-4 h-4" />
+            </div>
+            <h4 className="text-sm font-bold text-purple-900">
+              Locked Tests ({lockedTests.length})
             </h4>
           </div>
-          <div className="space-y-2 max-h-40 overflow-y-auto">
+          <div className="space-y-2 max-h-48 overflow-y-auto">
             {lockedTests.map((test: any) => (
-              <div key={test.id} className="rounded bg-white p-2 text-xs border border-purple-100">
-                <div className="font-medium text-gray-900">{test.testName}</div>
+              <div key={test.id} className="rounded-xl bg-white p-3 border border-purple-100 shadow-sm">
+                <div className="font-semibold text-gray-900 text-xs mb-1">{test.testName}</div>
                 {test.description && (
-                  <div className="mt-1 text-gray-600">{test.description}</div>
+                  <div className="text-xs text-gray-600 mb-2">{test.description}</div>
                 )}
-                <div className="mt-1 flex items-center space-x-2">
-                  <span className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
-                    test.testType === 'unit' ? 'bg-blue-100 text-blue-800' :
-                    test.testType === 'integration' ? 'bg-green-100 text-green-800' :
-                    'bg-orange-100 text-orange-800'
+                <div className="flex items-center space-x-2">
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                    test.testType === 'unit' ? 'bg-blue-100 text-blue-700' :
+                    test.testType === 'integration' ? 'bg-green-100 text-green-700' :
+                    'bg-orange-100 text-orange-700'
                   }`}>
                     {test.testType}
                   </span>
-                  <span className="text-gray-400 font-mono">{test.checksum.substring(0, 8)}</span>
+                  <span className="text-gray-400 font-mono text-xs">{test.checksum.substring(0, 8)}</span>
                 </div>
               </div>
             ))}
           </div>
-          <p className="mt-3 text-xs text-purple-700">
-            ⚠️ These tests must pass before deploying
-          </p>
+          <div className="mt-3 p-3 rounded-lg bg-purple-200/50 border border-purple-300 flex items-center space-x-2">
+            <AlertTriangle className="w-4 h-4 text-purple-700 flex-shrink-0" />
+            <p className="text-xs text-purple-900 font-semibold">
+              These tests must pass before deploying
+            </p>
+          </div>
         </div>
       )}
 
       {/* Linked Element (for Data APIs) */}
       {linkedElement && (
-        <div className="rounded-lg bg-indigo-50 p-4 border border-indigo-200">
-          <h4 className="text-sm font-semibold text-indigo-900 mb-2">
-            📎 Linked Element
-          </h4>
-          <div className="flex items-center space-x-2">
-            <span className="text-xl">🔷</span>
-            <span className="text-sm font-medium text-indigo-800">{linkedElement}</span>
+        <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-indigo-100 p-5 border border-indigo-200 shadow-md">
+          <div className="mb-3 flex items-center space-x-2">
+            <div className="p-2 rounded-lg bg-indigo-500 text-white">
+              <Link2 className="w-4 h-4" />
+            </div>
+            <h4 className="text-sm font-bold text-indigo-900">
+              Linked Element
+            </h4>
           </div>
-          <p className="mt-2 text-xs text-indigo-700">
-            This API automatically syncs with the {linkedElement} schema
-          </p>
+          <div className="rounded-xl bg-white p-3 border border-indigo-100">
+            <span className="text-sm font-bold text-indigo-900">{linkedElement}</span>
+          </div>
+          <div className="mt-3 p-2.5 rounded-lg bg-indigo-200/50 border border-indigo-300">
+            <p className="text-xs text-indigo-800 font-medium text-center">
+              This API automatically syncs with the {linkedElement} schema
+            </p>
+          </div>
         </div>
       )}
 
       {/* Relationships */}
       {relationships.length > 0 && (
-        <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
-          <h4 className="text-sm font-semibold text-blue-900 mb-2">
-            🔗 Relationships
-          </h4>
+        <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 p-5 border border-blue-200 shadow-md">
+          <div className="mb-3 flex items-center space-x-2">
+            <div className="p-2 rounded-lg bg-blue-500 text-white">
+              <Link2 className="w-4 h-4" />
+            </div>
+            <h4 className="text-sm font-bold text-blue-900">
+              Relationships
+            </h4>
+          </div>
           <div className="space-y-2">
             {relationships.map((rel: any, i: number) => (
-              <div key={i} className="rounded bg-white p-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900">{rel.fieldName}</span>
-                  <span className="rounded bg-blue-100 px-2 py-0.5 text-xs text-blue-800">
+              <div key={i} className="rounded-xl bg-white p-3 border border-blue-100 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-bold text-gray-900 text-sm">{rel.fieldName}</span>
+                  <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-700">
                     {rel.type}
                   </span>
                 </div>
-                <div className="mt-1 text-xs text-gray-600">
+                <div className="text-xs text-gray-600 font-medium">
                   {rel.from} → {rel.to}
                 </div>
               </div>
@@ -250,15 +274,20 @@ export function ComponentDetails({ nodeId, nodes }: ComponentDetailsProps) {
 
       {/* Properties (for Elements) */}
       {component.type === 'element' && component.schema?.properties && (
-        <div className="rounded-lg bg-gray-50 p-4 border">
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">
-            📋 Properties ({component.schema.properties.length})
-          </h4>
-          <div className="max-h-40 overflow-y-auto space-y-1">
+        <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-5 border border-gray-200 shadow-md">
+          <div className="mb-3 flex items-center space-x-2">
+            <div className="p-2 rounded-lg bg-gray-700 text-white">
+              <FileText className="w-4 h-4" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900">
+              Properties ({component.schema.properties.length})
+            </h4>
+          </div>
+          <div className="max-h-48 overflow-y-auto space-y-2">
             {component.schema.properties.map((prop: any, i: number) => (
-              <div key={i} className="flex items-center justify-between rounded bg-white px-2 py-1 text-xs">
-                <span className="font-medium text-gray-900">{prop.name}</span>
-                <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+              <div key={i} className="flex items-center justify-between rounded-xl bg-white px-3 py-2 border border-gray-200 shadow-sm">
+                <span className="font-semibold text-gray-900 text-sm">{prop.name}</span>
+                <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-700">
                   {prop.type}
                 </span>
               </div>
@@ -269,20 +298,25 @@ export function ComponentDetails({ nodeId, nodes }: ComponentDetailsProps) {
 
       {/* Operations (for Data APIs) */}
       {component.type === 'manipulator' && component.schema?.operations && (
-        <div className="rounded-lg bg-gray-50 p-4 border">
-          <h4 className="text-sm font-semibold text-gray-900 mb-2">
-            🌐 API Operations
-          </h4>
-          <div className="space-y-1">
+        <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-5 border border-gray-200 shadow-md">
+          <div className="mb-3 flex items-center space-x-2">
+            <div className="p-2 rounded-lg bg-indigo-500 text-white">
+              <GlobeIcon className="w-4 h-4" />
+            </div>
+            <h4 className="text-sm font-bold text-gray-900">
+              API Operations
+            </h4>
+          </div>
+          <div className="space-y-2">
             {Object.entries(component.schema.operations)
               .filter(([_, enabled]) => enabled)
               .map(([op, _], i) => (
-                <div key={i} className="flex items-center space-x-2 text-sm">
-                  <span className={`rounded px-2 py-0.5 text-xs font-semibold ${
-                    op === 'create' ? 'bg-green-100 text-green-800' :
-                    op === 'read' ? 'bg-blue-100 text-blue-800' :
-                    op === 'update' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
+                <div key={i} className="rounded-xl bg-white p-2.5 border border-gray-200 shadow-sm">
+                  <span className={`rounded-full px-3 py-1 text-xs font-bold inline-block ${
+                    op === 'create' ? 'bg-green-100 text-green-700' :
+                    op === 'read' ? 'bg-blue-100 text-blue-700' :
+                    op === 'update' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
                   }`}>
                     {op.toUpperCase()}
                   </span>
