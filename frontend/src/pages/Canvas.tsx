@@ -20,7 +20,7 @@ import { GroupModal } from '../components/modals/GroupModal';
 import { 
   ArrowLeft, Code, Github, Edit, Database, Globe, 
   Settings, Wrench, Lock, ClipboardCheck, CheckCircle, Workflow as WorkflowIcon,
-  FolderKanban, Trash2, Info, X
+  FolderKanban, Trash2, Info, X, Sparkles, TestTube2, Zap
 } from 'lucide-react';
 import { ElementModal } from '../components/modals/ElementModal';
 import { ManipulatorModal } from '../components/modals/ManipulatorModal';
@@ -34,6 +34,7 @@ import { CodePreviewModal } from '../components/modals/CodePreviewModal';
 import { GitHubPushModal } from '../components/modals/GitHubPushModal';
 import { RelationshipModal } from '../components/modals/RelationshipModal';
 import { ConfirmModal } from '../components/modals/ConfirmModal';
+import { CustomEndpointModal } from '../components/modals/CustomEndpointModal';
 import { Toaster, showToast } from '../components/ui/toast';
 import { KeyboardShortcutsHelp } from '../components/ui/KeyboardShortcutsHelp';
 import { ComponentStats } from '../components/canvas/ComponentStats';
@@ -102,6 +103,7 @@ function CanvasContent() {
     componentId: string;
     componentName: string;
   } | null>(null);
+  const [showCustomEndpoint, setShowCustomEndpoint] = useState(false);
 
   useEffect(() => {
     if (projectId) {
@@ -144,13 +146,11 @@ function CanvasContent() {
                   : n
               );
             } else if (change.type === 'select') {
-              // When selecting a node, deselect all others (single selection mode)
+              // Update selection state (React Flow handles multi-select with Shift key)
               return nds.map((n) =>
                 n.id === nodeId 
                   ? { ...n, selected: change.selected } 
-                  : change.selected // if we're selecting this node, deselect all others
-                    ? { ...n, selected: false } 
-                    : n
+                  : n
               );
             }
             return nds;
@@ -551,13 +551,6 @@ function CanvasContent() {
     }
   };
 
-  const handleCreateGroup = () => {
-    const centerPosition = project({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-    setDropPosition(centerPosition);
-    setEditingGroup(null);
-    setShowGroupModal(true);
-  };
-
   const handleEditGroup = useCallback((group: any) => {
     setEditingGroup(group);
     setShowGroupModal(true);
@@ -615,6 +608,7 @@ function CanvasContent() {
       groups.forEach((group) => {
         if (group.collapsed) return;
 
+        const groupHeaderHeight = 60; // Height of the group header
         const groupRect = {
           x: group.position.x,
           y: group.position.y,
@@ -631,7 +625,7 @@ function CanvasContent() {
         const isInside =
           nodeCenterX >= groupRect.x + tolerance &&
           nodeCenterX <= groupRect.x + groupRect.width - tolerance &&
-          nodeCenterY >= groupRect.y + tolerance &&
+          nodeCenterY >= groupRect.y + groupHeaderHeight + tolerance && // Account for header
           nodeCenterY <= groupRect.y + groupRect.height - tolerance;
 
         if (isInside && !group.nodeIds.includes(node.id)) {
@@ -771,18 +765,40 @@ function CanvasContent() {
       <div className="flex flex-1 overflow-hidden">
         {/* Component library sidebar */}
         <aside className="w-72 border-r border-gray-200/50 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm p-4 overflow-y-auto h-full">
-          {/* Create Group Button */}
-          <div className="mb-5">
+          {/* Magic Mode Buttons */}
+          <div className="mb-5 space-y-2">
             <button
-              onClick={handleCreateGroup}
-              className="w-full rounded-xl bg-gradient-to-r from-purple-600 via-purple-500 to-blue-500 p-4 text-left shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all hover:-translate-y-0.5"
+              onClick={() => {
+                showToast('🪄 Magic Mode coming soon!', 'info');
+              }}
+              className="w-full rounded-xl bg-gradient-to-r from-purple-600 via-pink-600 to-purple-500 p-4 text-left shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all hover:-translate-y-0.5"
             >
               <div className="flex items-center space-x-3 text-white">
-                <FolderKanban className="w-6 h-6" />
-                <span className="font-bold text-base">Create Group</span>
+                <Sparkles className="w-6 h-6" />
+                <span className="font-bold text-base">✨ Magic Generate</span>
               </div>
               <p className="text-xs text-white/90 mt-2 font-medium">
-                Organize your components
+                Describe entire system, AI builds it
+              </p>
+            </button>
+
+            <button
+              onClick={() => {
+                if (componentNodes.length === 0) {
+                  showToast('Add some components first', 'error');
+                  return;
+                }
+                showToast('🔮 Magic Improve coming soon!', 'info');
+              }}
+              disabled={componentNodes.length === 0}
+              className="w-full rounded-xl bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-500 p-4 text-left shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none"
+            >
+              <div className="flex items-center space-x-3 text-white">
+                <Zap className="w-6 h-6" />
+                <span className="font-bold text-base">🔮 Magic Improve</span>
+              </div>
+              <p className="text-xs text-white/90 mt-2 font-medium">
+                AI analyzes & enhances your system
               </p>
             </button>
           </div>
@@ -959,6 +975,26 @@ function CanvasContent() {
 
         {/* Canvas */}
         <div className="flex-1 relative h-full" ref={reactFlowWrapper}>
+          {/* Contextual Group Creation - appears when multiple nodes selected */}
+          {componentNodes.filter(n => n.selected).length > 1 && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 animate-in slide-in-from-top-2 duration-200">
+              <button
+                onClick={() => {
+                  const selectedNodes = componentNodes.filter(n => n.selected);
+                  // Calculate center position of selected nodes
+                  const avgX = selectedNodes.reduce((sum, n) => sum + n.position.x, 0) / selectedNodes.length;
+                  const avgY = selectedNodes.reduce((sum, n) => sum + n.position.y, 0) / selectedNodes.length;
+                  setDropPosition({ x: avgX, y: avgY });
+                  setShowGroupModal(true);
+                }}
+                className="flex items-center space-x-2 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5"
+              >
+                <FolderKanban className="w-4 h-4" />
+                <span>Group {componentNodes.filter(n => n.selected).length} Selected</span>
+              </button>
+            </div>
+          )}
+          
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -971,7 +1007,7 @@ function CanvasContent() {
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
             fitView
-            multiSelectionKeyCode={null}
+            multiSelectionKeyCode="Shift"
             defaultEdgeOptions={{
               type: 'smoothstep',
               animated: true,
@@ -1186,6 +1222,7 @@ function CanvasContent() {
       {showCodePreview && projectId && (
         <CodePreviewModal
           projectId={projectId}
+          projectName={projectName}
           onClose={() => setShowCodePreview(false)}
         />
       )}
@@ -1244,54 +1281,125 @@ function CanvasContent() {
         />
       )}
 
-      {showGenerateDataModal && (
-        <ConfirmModal
-          title="Generate realistic test data with AI?"
-          message={`AI will create sample data based on the ${showGenerateDataModal.componentName} schema for use in the generated tests.`}
-          confirmText="Generate Test Data"
-          cancelText="Lock without Test Data"
-          variant="info"
-          onConfirm={async () => {
-            try {
-              showToast('Generating test data with AI...', 'info');
-              const { generateApi } = await import('../lib/api');
-              const response = await generateApi.testData(showGenerateDataModal.componentId);
-              showToast('Test data generated! ✨', 'success');
-              
-              const result = await componentsApi.lock(showGenerateDataModal.componentId);
-              
-              // Save test data to component schema
-              const component = componentNodes.find(n => n.id === showGenerateDataModal.componentId);
-              if (component && response.testData) {
-                await componentsApi.update(showGenerateDataModal.componentId, {
-                  schema: {
-                    ...component.data.schema,
-                    testData: response.testData,
-                  },
-                });
-              }
-              
-              showToast(`${result.testCount} tests locked! 🔒`, 'success');
-              setShowGenerateDataModal(null);
-              await loadCanvas(projectId!);
-            } catch (error: any) {
-              showToast(error.message || 'Failed to generate test data', 'error');
-              setShowGenerateDataModal(null);
-            }
+      {showCustomEndpoint && projectId && (
+        <CustomEndpointModal
+          projectId={projectId}
+          onClose={() => setShowCustomEndpoint(false)}
+          onSuccess={() => {
+            // Refresh canvas to show new components
+            loadCanvas(projectId);
           }}
-          onCancel={async () => {
-            try {
-              const result = await componentsApi.lock(showGenerateDataModal.componentId);
-              showToast(`${result.testCount} tests locked! 🔒`, 'success');
-              setShowGenerateDataModal(null);
-              await loadCanvas(projectId!);
-            } catch (error: any) {
-              showToast(error.message || 'Failed to lock tests', 'error');
-              setShowGenerateDataModal(null);
-            }
-          }}
-          onClose={() => setShowGenerateDataModal(null)}
         />
+      )}
+
+      {showGenerateDataModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-gray-900/5">
+            <div className="mb-4 flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <TestTube2 className="w-6 h-6" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Generate Test Data with AI
+              </h2>
+            </div>
+            
+            <div className="mb-6 space-y-3">
+              <p className="text-sm text-gray-700">
+                Would you like AI to generate realistic test data for <strong>{showGenerateDataModal.componentName}</strong>?
+              </p>
+              
+              <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+                <div className="flex items-start space-x-2">
+                  <Sparkles className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-blue-800">
+                    <p className="font-semibold mb-1">With AI Test Data:</p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>Realistic sample data based on schema</li>
+                      <li>Edge cases and validation scenarios</li>
+                      <li>Ready-to-run tests with assertions</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                <div className="flex items-start space-x-2">
+                  <Lock className="w-4 h-4 text-gray-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-gray-700">
+                    <p className="font-semibold mb-1">Without Test Data:</p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>Tests locked immediately</li>
+                      <li>Basic test structure only</li>
+                      <li>You can add test data later</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={async () => {
+                  try {
+                    const result = await componentsApi.lock(showGenerateDataModal.componentId);
+                    showToast(`${result.testCount} tests locked! 🔒`, 'success');
+                    setShowGenerateDataModal(null);
+                    await loadCanvas(projectId!);
+                  } catch (error: any) {
+                    showToast(error.message || 'Failed to lock tests', 'error');
+                    setShowGenerateDataModal(null);
+                  }
+                }}
+                className="flex-1 rounded-xl border-2 border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all flex items-center justify-center space-x-2"
+              >
+                <Lock className="w-4 h-4" />
+                <span>Skip AI, Lock Now</span>
+              </button>
+              
+              <button
+                onClick={async () => {
+                  setShowGenerateDataModal(null);
+                  showToast('🤖 AI is generating test data...', 'info');
+                  
+                  try {
+                    const { generateApi } = await import('../lib/api');
+                    const response = await generateApi.testData(showGenerateDataModal.componentId);
+                    
+                    const result = await componentsApi.lock(showGenerateDataModal.componentId);
+                    
+                    // Save test data to component schema
+                    const component = componentNodes.find(n => n.id === showGenerateDataModal.componentId);
+                    if (component && response.testData) {
+                      await componentsApi.update(showGenerateDataModal.componentId, {
+                        schema: {
+                          ...component.data.schema,
+                          testData: response.testData,
+                        },
+                      });
+                    }
+                    
+                    showToast(`✨ ${result.testCount} tests locked with AI data!`, 'success');
+                    await loadCanvas(projectId!);
+                  } catch (error: any) {
+                    showToast(error.message || 'Failed to generate test data', 'error');
+                  }
+                }}
+                className="flex-1 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 transition-all hover:-translate-y-0.5 flex items-center justify-center space-x-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Generate with AI</span>
+              </button>
+            </div>
+            
+            <button
+              onClick={() => setShowGenerateDataModal(null)}
+              className="mt-3 w-full text-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

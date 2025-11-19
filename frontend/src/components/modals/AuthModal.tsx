@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { componentsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
-import { Lock, X, Check, Loader2 } from 'lucide-react';
+import { Lock, X, Check, Loader2, Zap, Key } from 'lucide-react';
 
 interface AuthModalProps {
   projectId: string;
@@ -11,9 +11,9 @@ interface AuthModalProps {
 }
 
 const authProviders = [
-  { value: 'supabase', label: 'Supabase', icon: 'zap', description: 'Full auth + database' },
-  { value: 'auth0', label: 'Auth0', icon: 'lock', description: 'Enterprise auth service' },
-  { value: 'jwt', label: 'JWT', icon: 'key', description: 'Custom JWT implementation' },
+  { value: 'supabase', label: 'Supabase', Icon: Zap, description: 'Full auth + database' },
+  { value: 'auth0', label: 'Auth0', Icon: Lock, description: 'Enterprise auth service' },
+  { value: 'jwt', label: 'JWT', Icon: Key, description: 'Custom JWT implementation' },
 ];
 
 const authFeatures = [
@@ -191,7 +191,7 @@ export function AuthModal({
                   }`}
                 >
                   <div className="flex items-center space-x-2">
-                    <span className="text-xl">{prov.icon}</span>
+                    <prov.Icon className="w-5 h-5 text-gray-700" />
                     <span className="font-semibold text-gray-900">{prov.label}</span>
                   </div>
                   <p className="mt-1 text-xs text-gray-600">{prov.description}</p>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { componentsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
-import { Lock, Unlock, Link2, FileText, Globe as GlobeIcon, Loader2, AlertTriangle } from 'lucide-react';
+import { Lock, Unlock, Link2, FileText, Globe as GlobeIcon, Loader2, AlertTriangle, Sparkles } from 'lucide-react';
 
 interface ComponentDetailsProps {
   nodeId: string | null;
@@ -333,6 +333,44 @@ export function ComponentDetails({ nodeId, nodes, onRequestGenerateData }: Compo
                   </span>
                 </div>
               ))}
+          </div>
+        </div>
+      )}
+
+      {/* Custom Endpoints (for Data APIs) */}
+      {component.type === 'manipulator' && component.schema?.customEndpoints && component.schema.customEndpoints.length > 0 && (
+        <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 p-5 border border-purple-200 shadow-md">
+          <div className="mb-3 flex items-center space-x-2">
+            <div className="p-2 rounded-lg bg-purple-500 text-white">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <h4 className="text-sm font-bold text-purple-900">
+              Custom Endpoints
+            </h4>
+          </div>
+          <div className="space-y-2">
+            {component.schema.customEndpoints.map((endpoint: any, i: number) => (
+              <div key={i} className="rounded-xl bg-white p-3 border border-purple-200 shadow-sm">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className={`rounded-full px-2 py-1 text-xs font-bold ${
+                    endpoint.method === 'GET' ? 'bg-blue-100 text-blue-700' :
+                    endpoint.method === 'POST' ? 'bg-green-100 text-green-700' :
+                    endpoint.method === 'PATCH' ? 'bg-yellow-100 text-yellow-700' :
+                    endpoint.method === 'DELETE' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {endpoint.method}
+                  </span>
+                  <span className="font-mono text-xs text-gray-900">{endpoint.path}</span>
+                </div>
+                <p className="text-xs text-gray-600">{endpoint.description}</p>
+                {endpoint.addedAt && (
+                  <p className="text-xs text-purple-600 mt-2 italic">
+                    Added: {new Date(endpoint.addedAt).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ import {
 
 interface CodePreviewModalProps {
   projectId: string;
+  projectName: string;
   onClose: () => void;
 }
 
@@ -26,7 +27,7 @@ interface FileTreeNode {
   isExpanded?: boolean;
 }
 
-export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) {
+export function CodePreviewModal({ projectId, projectName, onClose }: CodePreviewModalProps) {
   const [files, setFiles] = useState<GeneratedFile[]>([]);
   const [selectedFile, setSelectedFile] = useState<GeneratedFile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,10 +61,10 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
     }
   }
 
-  async function handleLetMagicHappen() {
+  async function handleAddFinalTouches() {
     setMagicInProgress(true);
     try {
-      showToast('🪄 AI is analyzing your project...', 'info');
+      showToast('🔍 AI is reviewing your system...', 'info');
       
       // Call AI finalization endpoint
       const result = await fetch(
@@ -80,7 +81,7 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
       if (!result.ok) throw new Error('Finalization failed');
 
       const data = await result.json();
-      showToast(`✨ Magic complete! Generated ${data.completions} implementations`, 'success');
+      showToast(`✨ System enhanced! ${data.completions} improvements applied`, 'success');
       
       // Reload preview with finalized code
       await loadPreview();
@@ -109,7 +110,12 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `project-${projectId}.zip`;
+      // Use project name, sanitized for filename
+      const sanitizedName = projectName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      a.download = `${sanitizedName}.zip`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -423,18 +429,19 @@ export function CodePreviewModal({ projectId, onClose }: CodePreviewModalProps) 
             <div className="flex items-center space-x-3">
               {!magicMode && (
                 <button
-                  onClick={handleLetMagicHappen}
+                  onClick={handleAddFinalTouches}
                   disabled={magicInProgress}
                   className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 flex items-center space-x-2 transition-all hover:-translate-y-0.5"
+                  title="AI reviews your system for coherence, adds missing logic, and ensures everything is wired together properly"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>{magicInProgress ? 'AI Working...' : 'Let Magic Happen'}</span>
+                  <span>{magicInProgress ? 'Analyzing...' : 'Add Final Touches'}</span>
                 </button>
               )}
               {magicMode && (
                 <span className="flex items-center space-x-2 px-4 py-2 rounded-xl bg-green-100 text-green-700 font-semibold text-sm">
                   <CheckCircle className="w-4 h-4" />
-                  <span>Production Ready!</span>
+                  <span>System Verified!</span>
                 </span>
               )}
               <button

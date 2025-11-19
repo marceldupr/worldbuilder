@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { 
   Database, Globe, Settings, Wrench, Lock, ClipboardCheck, 
-  CheckCircle, Workflow, LucideIcon
+  CheckCircle, Workflow, LucideIcon, ChevronDown, ChevronRight
 } from 'lucide-react';
 
 interface ComponentStatsProps {
@@ -64,6 +65,8 @@ const componentTypes: Record<string, {
 };
 
 export function ComponentStats({ components }: ComponentStatsProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   const stats = Object.keys(componentTypes).reduce((acc, type) => {
     acc[type] = components.filter((c) => c.type === type).length;
     return acc;
@@ -74,11 +77,24 @@ export function ComponentStats({ components }: ComponentStatsProps) {
   if (total === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-md">
-      <h4 className="mb-4 text-sm font-bold text-gray-900 uppercase tracking-wide">
-        Component Summary
-      </h4>
-      <div className="space-y-2">
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-md overflow-hidden">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center space-x-2">
+          {isExpanded ? <ChevronDown className="w-4 h-4 text-gray-600" /> : <ChevronRight className="w-4 h-4 text-gray-600" />}
+          <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wide">
+            Component Summary
+          </h4>
+        </div>
+        <span className="font-bold text-base bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          {total}
+        </span>
+      </button>
+      
+      {isExpanded && (
+        <div className="px-5 pb-5 space-y-2 border-t border-gray-100">
         {Object.entries(componentTypes).map(([type, config]) => {
           const count = stats[type];
           if (count === 0) return null;
@@ -100,15 +116,8 @@ export function ComponentStats({ components }: ComponentStatsProps) {
             </div>
           );
         })}
-        <div className="border-t border-gray-200 mt-3 pt-3">
-          <div className="flex items-center justify-between px-2">
-            <span className="text-sm font-bold text-gray-900">Total</span>
-            <span className="font-bold text-base bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {total}
-            </span>
-          </div>
-        </div>
       </div>
+      )}
     </div>
   );
 }

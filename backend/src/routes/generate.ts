@@ -553,5 +553,260 @@ Return realistic test data that can be used in unit tests.`;
   }
 });
 
+/**
+ * POST /api/generate/custom-endpoint-plan
+ * Analyze endpoint description and create generation plan
+ */
+router.post('/custom-endpoint-plan', async (req: AuthRequest, res): Promise<void> => {
+  try {
+    const { projectId, description } = req.body;
+
+    if (!description) {
+      res.status(400).json({ error: 'Description is required' });
+      return;
+    }
+
+    // Get project context
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: { components: true },
+    });
+
+    if (!project || project.userId !== req.user!.id) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    // Build context for AI
+    const existingComponents = project.components.map(c => ({
+      name: c.name,
+      type: c.type,
+      description: c.description,
+    }));
+
+    // Ask AI to create a generation plan
+    const prompt = `You are an expert software architect analyzing an API endpoint requirement.
+
+PROJECT CONTEXT:
+- Project: ${project.name}
+- Existing components (${existingComponents.length}):
+${existingComponents.length > 0 ? existingComponents.map(c => `  • ${c.name} (${c.type}): ${c.description}`).join('\n') : '  (none yet)'}
+
+USER REQUEST:
+"${description}"
+
+CRITICAL RULES:
+1. FIRST check if components already exist in the project above
+2. ONLY suggest NEW components if they DON'T exist
+3. If a relevant API already exists, ADD endpoint to it, don't create new API
+4. For example:
+   - If "Task" element exists, don't suggest creating "Task" again
+   - If "Task API" exists, ADD custom endpoint to it instead of creating new API
+   - If "Authentication" exists, don't suggest "Authentication" again
+5. Be minimal - suggest only what's truly missing
+
+SPECIAL CASE - Adding to Existing API:
+If the endpoint relates to an existing Element that already has an API:
+- Set "addToExistingApi" to the name of the existing API component
+- Do NOT include a new "manipulator" component in the list
+- The custom endpoint will be added to the existing API
+
+TASK:
+Analyze this request and create a plan. Consider:
+1. What HTTP method and path should be used?
+2. Should this be added to an existing API or create new?
+3. What components are MISSING?
+
+IMPORTANT: Keep components list SHORT. Only truly necessary new components.
+
+RESPONSE FORMAT (JSON only):
+{
+  "endpoint": {
+    "method": "POST|GET|PATCH|DELETE",
+    "path": "/path/to/endpoint",
+    "description": "What this endpoint does"
+  },
+  "addToExistingApi": "Task API" | null,
+  "components": [
+    {
+      "type": "element|manipulator|worker|helper|auditor|workflow",
+      "name": "ComponentName",
+      "description": "What this component does",
+      "reason": "Why this component is needed"
+    }
+  ]
+}
+
+Generate a complete, thoughtful plan. Include ALL components needed, not just the obvious ones.`;
+
+    console.log('[CustomEndpoint] Calling OpenAI for plan...');
+    const openai = getOpenAIClient();
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert software architect. Respond ONLY with valid JSON.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.3,
+      response_format: { type: 'json_object' },
+    });
+
+    const plan = JSON.parse(response.choices[0].message.content || '{}');
+    console.log('[CustomEndpoint] ✅ Plan generated:', plan);
+
+    res.json({ plan });
+  } catch (error: any) {
+    console.error('[CustomEndpoint] Error creating plan:', error);
+    res.status(500).json({ error: error.message || 'Failed to create plan' });
+  }
+});
+
+/**
+ * POST /api/generate/custom-endpoint
+ * Generate all components from the plan
+ */
+router.post('/custom-endpoint', async (req: AuthRequest, res): Promise<void> => {
+  try {
+    const { projectId, description, plan } = req.body;
+
+    if (!plan || !plan.components) {
+      res.status(400).json({ error: 'Invalid plan' });
+      return;
+    }
+
+    // Get project
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: { components: true },
+    });
+
+    if (!project || project.userId !== req.user!.id) {
+      res.status(404).json({ error: 'Project not found' });
+      return;
+    }
+
+    const createdComponents: any[] = [];
+    let xPos = 100;
+    let yPos = 100;
+
+    // Check if we should add to existing API
+    if (plan.addToExistingApi) {
+      console.log(`[CustomEndpoint] Adding endpoint to existing API: ${plan.addToExistingApi}`);
+      
+      // Find the existing API component
+      const existingApi = project.components.find(
+        (c: any) => c.name === plan.addToExistingApi && c.type === 'manipulator'
+      );
+      
+      if (existingApi) {
+        // Add custom endpoint to existing API schema
+        const currentSchema = (existingApi.schema as any) || {};
+        const updatedSchema = {
+          ...currentSchema,
+          customEndpoints: [
+            ...(currentSchema.customEndpoints || []),
+            {
+              method: plan.endpoint.method,
+              path: plan.endpoint.path,
+              description: plan.endpoint.description,
+              addedAt: new Date().toISOString(),
+            }
+          ]
+        };
+        
+        await prisma.component.update({
+          where: { id: existingApi.id },
+          data: { schema: updatedSchema },
+        });
+        
+        console.log(`[CustomEndpoint] ✅ Added custom endpoint to ${plan.addToExistingApi}`);
+      } else {
+        console.warn(`[CustomEndpoint] ⚠️ API "${plan.addToExistingApi}" not found, will create new components`);
+      }
+    }
+
+    console.log(`[CustomEndpoint] Generating ${plan.components.length} new components...`);
+
+    // Generate each component in order
+    for (const componentPlan of plan.components) {
+      try {
+        console.log(`[CustomEndpoint] Creating ${componentPlan.type}: ${componentPlan.name}`);
+        
+        // Generate schema for this component using AI
+        const schemaPrompt = `Generate a detailed schema for this component:
+
+Type: ${componentPlan.type}
+Name: ${componentPlan.name}
+Description: ${componentPlan.description}
+Context: Part of endpoint "${plan.endpoint.path}" which does: ${plan.endpoint.description}
+Original User Request: ${description}
+
+Respond with a JSON schema appropriate for this component type. Make it complete and production-ready.`;
+
+        const openai = getOpenAIClient();
+        const schemaResponse = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: getSystemPrompt(componentPlan.type),
+            },
+            {
+              role: 'user',
+              content: schemaPrompt,
+            },
+          ],
+          temperature: 0.2,
+          response_format: { type: 'json_object' },
+        });
+
+        const schema = JSON.parse(schemaResponse.choices[0].message.content || '{}');
+
+        // Create component in database
+        const component = await prisma.component.create({
+          data: {
+            projectId,
+            type: componentPlan.type,
+            name: componentPlan.name,
+            description: componentPlan.description,
+            schema,
+            position: { x: xPos, y: yPos },
+            status: 'ready',
+          },
+        });
+
+        createdComponents.push(component);
+        console.log(`[CustomEndpoint] ✅ Created ${componentPlan.name}`);
+
+        // Position next component
+        xPos += 250;
+        if (xPos > 800) {
+          xPos = 100;
+          yPos += 150;
+        }
+      } catch (error) {
+        console.error(`[CustomEndpoint] Error creating component ${componentPlan.name}:`, error);
+      }
+    }
+
+    console.log(`[CustomEndpoint] ✅ Generated ${createdComponents.length} components successfully`);
+
+    res.json({
+      success: true,
+      components: createdComponents,
+      endpoint: plan.endpoint,
+    });
+  } catch (error: any) {
+    console.error('[CustomEndpoint] Error generating custom endpoint:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate endpoint' });
+  }
+});
+
 export { router as generateRouter };
 

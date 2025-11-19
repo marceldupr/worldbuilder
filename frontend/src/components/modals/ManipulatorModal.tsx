@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { componentsApi, projectsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
+import { supabase } from '../../lib/supabase';
 import { 
-  Globe, X, Check, Loader2, AlertTriangle, Upload, Database
+  Globe, X, Check, Loader2, AlertTriangle, Upload, Database, Sparkles
 } from 'lucide-react';
 
 interface ManipulatorModalProps {
@@ -36,6 +37,10 @@ export function ManipulatorModal({
   const [enableFileUpload, setEnableFileUpload] = useState(false);
   const [uploadFields, setUploadFields] = useState('images');
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'standard' | 'custom'>('standard');
+  const [customEndpointDescription, setCustomEndpointDescription] = useState('');
+  const [customEndpointPlan, setCustomEndpointPlan] = useState<any>(null);
+  const [showingPlan, setShowingPlan] = useState(false);
 
   useEffect(() => {
     loadElements();
@@ -72,7 +77,126 @@ export function ManipulatorModal({
     }
   }
 
+  async function handleAnalyzeCustomEndpoint() {
+    if (!customEndpointDescription.trim()) {
+      showToast('Please describe your custom endpoint', 'error');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      showToast('🤖 AI is analyzing your endpoint...', 'info');
+      
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      if (!token) {
+        throw new Error('Authentication required');
+      }
+      
+      // Call AI to create plan
+      const planResponse = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/generate/custom-endpoint-plan`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ 
+            projectId, 
+            description: customEndpointDescription 
+          }),
+        }
+      );
+
+      if (!planResponse.ok) throw new Error('Failed to analyze endpoint');
+      
+      const planData = await planResponse.json();
+      setCustomEndpointPlan(planData.plan);
+      setShowingPlan(true);
+      showToast(`✨ Review the plan before generating`, 'success');
+      
+    } catch (error: any) {
+      showToast(error.message || 'Failed to analyze endpoint', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGenerateFromPlan() {
+    if (!customEndpointPlan) return;
+    
+    setLoading(true);
+    try {
+      showToast('🔨 Generating components...', 'info');
+      
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      // Generate all components
+      const generateResponse = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/generate/custom-endpoint`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ 
+            projectId, 
+            description: customEndpointDescription,
+            plan: customEndpointPlan
+          }),
+        }
+      );
+
+      if (!generateResponse.ok) throw new Error('Failed to generate components');
+      
+      const generateData = await generateResponse.json();
+      
+      if (customEndpointPlan.addToExistingApi) {
+        if (generateData.components.length > 0) {
+          showToast(`✅ Added endpoint to ${customEndpointPlan.addToExistingApi} + created ${generateData.components.length} components!`, 'success');
+          onSuccess(generateData.components[0]);
+          onClose();
+        } else {
+          showToast(`✅ Added endpoint to ${customEndpointPlan.addToExistingApi}!`, 'success');
+          // No new components created, just close the modal
+          // The parent will handle refreshing if needed
+          onClose();
+        }
+      } else {
+        showToast(`✅ Created ${generateData.components.length} components!`, 'success');
+        if (generateData.components.length > 0) {
+          onSuccess(generateData.components[0]);
+        }
+        onClose();
+      }
+      
+    } catch (error: any) {
+      showToast(error.message || 'Failed to generate components', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleCreate() {
+    // Custom endpoint mode - already showing plan
+    if (mode === 'custom' && showingPlan) {
+      await handleGenerateFromPlan();
+      return;
+    }
+    
+    // Custom endpoint mode - need to analyze first
+    if (mode === 'custom') {
+      await handleAnalyzeCustomEndpoint();
+      return;
+    }
+    
+    // Standard mode
     if (!name.trim() || !linkedElement) {
       showToast('Please provide a name and select an element', 'error');
       return;
@@ -203,6 +327,180 @@ export function ManipulatorModal({
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-8 py-6">
           <div className="space-y-6">
+          
+          {/* Mode Selector */}
+          <div className="rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 p-4">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">
+              API Type
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setMode('standard')}
+                className={`rounded-xl border-2 p-4 text-left transition-all ${
+                  mode === 'standard'
+                    ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                    : 'border-gray-300 bg-white hover:border-gray-400'
+                }`}
+              >
+                <div className="flex items-center space-x-2 mb-2">
+                  <Database className={`w-5 h-5 ${mode === 'standard' ? 'text-indigo-600' : 'text-gray-600'}`} />
+                  <span className={`font-bold text-sm ${mode === 'standard' ? 'text-indigo-900' : 'text-gray-900'}`}>
+                    Standard CRUD
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  REST API for existing Element
+                </p>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setMode('custom')}
+                className={`rounded-xl border-2 p-4 text-left transition-all ${
+                  mode === 'custom'
+                    ? 'border-purple-500 bg-purple-50 shadow-md'
+                    : 'border-gray-300 bg-white hover:border-gray-400'
+                }`}
+              >
+                <div className="flex items-center space-x-2 mb-2">
+                  <Sparkles className={`w-5 h-5 ${mode === 'custom' ? 'text-purple-600' : 'text-gray-600'}`} />
+                  <span className={`font-bold text-sm ${mode === 'custom' ? 'text-purple-900' : 'text-gray-900'}`}>
+                    Custom Endpoint
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  AI generates from description
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {mode === 'custom' && !showingPlan && (
+            <div className="rounded-xl bg-purple-50 border-2 border-purple-200 p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-purple-900 mb-2">
+                  Describe Your Custom Endpoint
+                </label>
+                <textarea
+                  value={customEndpointDescription}
+                  onChange={(e) => setCustomEndpointDescription(e.target.value)}
+                  placeholder="Example: Create an endpoint that accepts an order, validates items, checks inventory, processes payment via Stripe, and sends confirmation email..."
+                  rows={5}
+                  className="w-full rounded-xl border border-purple-300 px-4 py-3 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 text-sm"
+                />
+              </div>
+              
+              <div className="rounded-lg bg-white border border-purple-300 p-4">
+                <div className="flex items-start space-x-2">
+                  <Sparkles className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-purple-800">
+                    <p className="font-semibold mb-1">AI will create:</p>
+                    <ul className="space-y-1 list-disc list-inside">
+                      <li>All necessary Elements (data models)</li>
+                      <li>Validation components (Auditors)</li>
+                      <li>External integrations (Helpers)</li>
+                      <li>Background jobs (Workers)</li>
+                      <li>Complete workflow orchestration</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mode === 'custom' && showingPlan && customEndpointPlan && (
+            <div className="rounded-xl bg-purple-50 border-2 border-purple-200 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-purple-900">Review AI Plan</h3>
+                <button
+                  onClick={() => {
+                    setShowingPlan(false);
+                    setCustomEndpointPlan(null);
+                  }}
+                  className="text-sm text-purple-700 hover:text-purple-900 underline"
+                >
+                  ← Edit Description
+                </button>
+              </div>
+
+              {/* Endpoint Info */}
+              <div className="rounded-lg bg-white border border-purple-300 p-4">
+                <div className="text-xs font-semibold text-purple-600 mb-2">API Endpoint</div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2 py-1 rounded bg-purple-100 text-purple-800 font-mono text-xs font-bold">
+                    {customEndpointPlan.endpoint.method}
+                  </span>
+                  <span className="font-mono text-sm text-gray-900">
+                    {customEndpointPlan.endpoint.path}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-gray-600">{customEndpointPlan.endpoint.description}</p>
+                
+                {customEndpointPlan.addToExistingApi && (
+                  <div className="mt-3 flex items-start space-x-2 p-2 rounded bg-green-50 border border-green-200">
+                    <Check className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-green-800">
+                      <p className="font-semibold">Adding to existing API</p>
+                      <p className="mt-1">This endpoint will be added to <strong>{customEndpointPlan.addToExistingApi}</strong> instead of creating a new API.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Components List */}
+              <div>
+                <div className="text-sm font-semibold text-purple-900 mb-3">
+                  {customEndpointPlan.components.length === 0 ? 'No new components needed' : `New Components to Create (${customEndpointPlan.components.length})`}
+                </div>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {customEndpointPlan.components.length === 0 && (
+                    <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-center">
+                      <Check className="w-6 h-6 text-green-600 mx-auto mb-2" />
+                      <p className="text-sm text-green-800 font-medium">
+                        All components already exist!
+                      </p>
+                      <p className="text-xs text-green-700 mt-1">
+                        The endpoint will be added to your existing API.
+                      </p>
+                    </div>
+                  )}
+                  {customEndpointPlan.components.map((comp: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="rounded-lg bg-white border border-purple-200 p-3"
+                    >
+                      <div className="flex items-start space-x-2">
+                        <span className="text-lg">
+                          {comp.type === 'element' && '🔷'}
+                          {comp.type === 'manipulator' && '🌐'}
+                          {comp.type === 'worker' && '⚙️'}
+                          {comp.type === 'helper' && '🔧'}
+                          {comp.type === 'auditor' && '📋'}
+                          {comp.type === 'enforcer' && '✅'}
+                          {comp.type === 'workflow' && '🔄'}
+                          {comp.type === 'auth' && '🔒'}
+                        </span>
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-semibold text-gray-900 text-sm">{comp.name}</span>
+                            <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                              {comp.type}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1">{comp.description}</p>
+                          <p className="text-xs text-purple-700 italic mt-1">💡 {comp.reason}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {mode === 'standard' && (
+            <>
           {/* API Name */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -413,6 +711,8 @@ export function ManipulatorModal({
               ))}
             </div>
           </div>
+          </>
+          )}
           </div>
         </div>
 
@@ -427,18 +727,32 @@ export function ManipulatorModal({
             </button>
             <button
               onClick={handleCreate}
-              disabled={loading || !name.trim() || !linkedElement}
+              disabled={
+                loading || 
+                (mode === 'standard' && (!name.trim() || !linkedElement)) ||
+                (mode === 'custom' && !showingPlan && !customEndpointDescription.trim())
+              }
               className="rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 disabled:opacity-50 disabled:shadow-none transition-all hover:-translate-y-0.5 flex items-center space-x-2"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Creating...</span>
+                  <span>{showingPlan ? 'Generating...' : 'Analyzing...'}</span>
                 </>
               ) : (
                 <>
-                  <Check className="w-4 h-4" />
-                  <span>Create API</span>
+                  {mode === 'custom' && !showingPlan && <Sparkles className="w-4 h-4" />}
+                  {mode === 'custom' && showingPlan && <Check className="w-4 h-4" />}
+                  {mode === 'standard' && <Check className="w-4 h-4" />}
+                  <span>
+                    {mode === 'custom' && !showingPlan && 'Analyze with AI'}
+                    {mode === 'custom' && showingPlan && (
+                      customEndpointPlan?.addToExistingApi 
+                        ? `Add to ${customEndpointPlan.addToExistingApi}${customEndpointPlan.components.length > 0 ? ` + ${customEndpointPlan.components.length} New` : ''}` 
+                        : `Generate ${customEndpointPlan?.components.length || 0} Components`
+                    )}
+                    {mode === 'standard' && 'Create API'}
+                  </span>
                 </>
               )}
             </button>

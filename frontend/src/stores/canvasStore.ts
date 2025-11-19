@@ -226,8 +226,31 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       // Get all components from the database
       const components = project.components || [];
       
+      // Create a map of components by ID for easy lookup
+      const componentMap = new Map(components.map((c: any) => [c.id, c]));
+      
       // Create a map of existing node IDs
       const existingNodeIds = new Set(canvasData.nodes.map((n: Node) => n.id));
+      
+      // Update existing nodes with latest component data (including locked state)
+      const updatedExistingNodes: Node[] = canvasData.nodes
+        .filter((node: Node) => componentMap.has(node.id)) // Only keep nodes that still have components
+        .map((node: Node) => {
+          const component = componentMap.get(node.id);
+          if (!component) return node;
+          
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              label: (component as any).name,
+              type: (component as any).type,
+              status: (component as any).status,
+              description: (component as any).description,
+              locked: (component as any).locked || false, // Update locked state from DB
+            },
+          };
+        });
       
       // Create nodes for any components that don't have nodes yet
       const missingComponentNodes: Node[] = components
@@ -245,8 +268,8 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
           },
         }));
       
-      // Combine existing nodes with missing component nodes
-      const allNodes = [...canvasData.nodes, ...missingComponentNodes];
+      // Combine updated existing nodes with missing component nodes
+      const allNodes = [...updatedExistingNodes, ...missingComponentNodes];
       
       set({
         nodes: allNodes,

@@ -206,6 +206,18 @@ export class CodeGeneratorService {
         path: `src/workers/${templateHelpers.kebabCase(name)}.worker.ts`,
         content: processorContent,
       });
+
+      // Test file
+      try {
+        const testTemplate = await this.loadTemplate('worker/test.ts.hbs');
+        const testContent = this.compileTemplate(testTemplate, { ...schema, name });
+        files.push({
+          path: `src/workers/__tests__/${templateHelpers.kebabCase(name)}.worker.test.ts`,
+          content: testContent,
+        });
+      } catch (error) {
+        console.error(`Error generating test for ${name}:`, error);
+      }
     } catch (error) {
       console.error(`Error generating worker files for ${name}:`, error);
     }
@@ -228,6 +240,18 @@ export class CodeGeneratorService {
         path: `src/helpers/${templateHelpers.kebabCase(name)}.helper.ts`,
         content: serviceContent,
       });
+
+      // Test file
+      try {
+        const testTemplate = await this.loadTemplate('helper/test.ts.hbs');
+        const testContent = this.compileTemplate(testTemplate, { ...schema, name });
+        files.push({
+          path: `src/helpers/__tests__/${templateHelpers.kebabCase(name)}.helper.test.ts`,
+          content: testContent,
+        });
+      } catch (error) {
+        console.error(`Error generating test for ${name}:`, error);
+      }
     } catch (error) {
       console.error(`Error generating helper files for ${name}:`, error);
     }
@@ -250,6 +274,18 @@ export class CodeGeneratorService {
         path: `src/auditors/${templateHelpers.kebabCase(name)}.auditor.ts`,
         content: auditorContent,
       });
+
+      // Test file
+      try {
+        const testTemplate = await this.loadTemplate('auditor/test.ts.hbs');
+        const testContent = this.compileTemplate(testTemplate, { ...schema, name });
+        files.push({
+          path: `src/auditors/__tests__/${templateHelpers.kebabCase(name)}.auditor.test.ts`,
+          content: testContent,
+        });
+      } catch (error) {
+        console.error(`Error generating test for ${name}:`, error);
+      }
     } catch (error) {
       console.error(`Error generating auditor files for ${name}:`, error);
     }
@@ -272,6 +308,18 @@ export class CodeGeneratorService {
         path: `src/enforcers/${templateHelpers.kebabCase(name)}.enforcer.ts`,
         content: enforcerContent,
       });
+
+      // Test file
+      try {
+        const testTemplate = await this.loadTemplate('enforcer/test.ts.hbs');
+        const testContent = this.compileTemplate(testTemplate, { ...schema, name });
+        files.push({
+          path: `src/enforcers/__tests__/${templateHelpers.kebabCase(name)}.enforcer.test.ts`,
+          content: testContent,
+        });
+      } catch (error) {
+        console.error(`Error generating test for ${name}:`, error);
+      }
     } catch (error) {
       console.error(`Error generating enforcer files for ${name}:`, error);
     }
@@ -294,6 +342,18 @@ export class CodeGeneratorService {
         path: `src/workflows/${templateHelpers.kebabCase(name)}.workflow.ts`,
         content: workflowContent,
       });
+
+      // Test file
+      try {
+        const testTemplate = await this.loadTemplate('workflow/test.ts.hbs');
+        const testContent = this.compileTemplate(testTemplate, { ...schema, name });
+        files.push({
+          path: `src/workflows/__tests__/${templateHelpers.kebabCase(name)}.workflow.test.ts`,
+          content: testContent,
+        });
+      } catch (error) {
+        console.error(`Error generating test for ${name}:`, error);
+      }
     } catch (error) {
       console.error(`Error generating workflow files for ${name}:`, error);
     }

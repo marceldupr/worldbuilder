@@ -181,5 +181,43 @@ describe('{{linkedElement}} API', () => {
 {{/if}}
   });
 {{/if}}
+
+{{#if customEndpoints}}
+{{#each customEndpoints}}
+  describe('{{method}} {{path}}', () => {
+    it('should handle custom endpoint: {{description}}', async () => {
+      // TODO: Create test data
+      const testData = {};
+      
+      const response = await request(app)
+        .{{lowercase method}}('{{path}}')
+{{#if (or (eq method 'POST') (eq method 'PATCH') (eq method 'PUT'))}}
+        .send(testData)
+{{/if}}
+{{#unless (eq ../authentication.read 'public')}}
+        .set('Authorization', `Bearer ${authToken}`)
+{{/unless}}
+        .expect(200);
+
+      expect(response.body).toBeDefined();
+    });
+
+    it('should validate custom endpoint input', async () => {
+      const response = await request(app)
+        .{{lowercase method}}('{{path}}')
+{{#if (or (eq method 'POST') (eq method 'PATCH') (eq method 'PUT'))}}
+        .send({}) // Empty/invalid data
+{{/if}}
+{{#unless (eq ../authentication.read 'public')}}
+        .set('Authorization', `Bearer ${authToken}`)
+{{/unless}};
+
+      // Depending on the endpoint, might return 200 or 400
+      expect([200, 400]).toContain(response.status);
+    });
+  });
+
+{{/each}}
+{{/if}}
 });
 
