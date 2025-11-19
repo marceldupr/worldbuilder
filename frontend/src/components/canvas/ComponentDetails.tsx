@@ -24,6 +24,18 @@ export function ComponentDetails({ nodeId, nodes, onRequestGenerateData }: Compo
       setLockedTests([]);
     }
   }, [nodeId]);
+  
+  // Also reload when the node data changes (e.g., when locked status updates)
+  useEffect(() => {
+    if (nodeId && component) {
+      const node = nodes.find(n => n.id === nodeId);
+      if (node && node.data.locked !== component.locked) {
+        // Locked status changed, reload component and tests
+        loadComponent(nodeId);
+        loadTests(nodeId);
+      }
+    }
+  }, [nodes, nodeId, component]);
 
   async function loadComponent(id: string) {
     setLoading(true);

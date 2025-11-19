@@ -142,6 +142,24 @@ export const generateApi = {
       method: 'POST',
       body: JSON.stringify({ componentId }),
     }),
+  
+  magicImprove: (projectId: string) =>
+    fetchWithAuth('/api/generate/magic-improve', {
+      method: 'POST',
+      body: JSON.stringify({ projectId }),
+    }),
+  
+  applyImprovements: (projectId: string, improvements: any[]) =>
+    fetchWithAuth('/api/generate/apply-improvements', {
+      method: 'POST',
+      body: JSON.stringify({ projectId, improvements }),
+    }),
+  
+  applyImprovement: (projectId: string, improvement: any) =>
+    fetchWithAuth('/api/generate/apply-improvement', {
+      method: 'POST',
+      body: JSON.stringify({ projectId, improvement }),
+    }),
 };
 
 // Code Generation

@@ -36,6 +36,7 @@ import { GitHubPushModal } from '../components/modals/GitHubPushModal';
 import { RelationshipModal } from '../components/modals/RelationshipModal';
 import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { CustomEndpointModal } from '../components/modals/CustomEndpointModal';
+import { MagicImproveModal } from '../components/modals/MagicImproveModal';
 import { Toaster, showToast } from '../components/ui/toast';
 import { KeyboardShortcutsHelp } from '../components/ui/KeyboardShortcutsHelp';
 import { ComponentStats } from '../components/canvas/ComponentStats';
@@ -106,6 +107,7 @@ function CanvasContent() {
     componentName: string;
   } | null>(null);
   const [showCustomEndpoint, setShowCustomEndpoint] = useState(false);
+  const [showMagicImprove, setShowMagicImprove] = useState(false);
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
@@ -886,7 +888,7 @@ function CanvasContent() {
                   showToast('Add some components first', 'error');
                   return;
                 }
-                showToast('🔮 Magic Improve coming soon!', 'info');
+                setShowMagicImprove(true);
               }}
               disabled={componentNodes.length === 0}
               className="w-full rounded-xl bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-500 p-4 text-left shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:shadow-none"
@@ -1352,6 +1354,19 @@ function CanvasContent() {
         />
       )}
 
+      {showMagicImprove && projectId && (
+        <MagicImproveModal
+          projectId={projectId}
+          projectName={projectName}
+          onClose={() => setShowMagicImprove(false)}
+          onSuccess={() => {
+            // Refresh canvas to show new/updated components
+            loadCanvas(projectId);
+            refreshNodeData(projectId);
+          }}
+        />
+      )}
+
       {showGenerateDataModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-gray-900/5">
@@ -1405,7 +1420,9 @@ function CanvasContent() {
                     const result = await componentsApi.lock(showGenerateDataModal.componentId);
                     showToast(`${result.testCount} tests locked! 🔒`, 'success');
                     setShowGenerateDataModal(null);
+                    // Refresh canvas to update locked status
                     await loadCanvas(projectId!);
+                    await refreshNodeData(projectId!);
                   } catch (error: any) {
                     showToast(error.message || 'Failed to lock tests', 'error');
                     setShowGenerateDataModal(null);
@@ -1440,7 +1457,9 @@ function CanvasContent() {
                     }
                     
                     showToast(`✨ ${result.testCount} tests locked with AI data!`, 'success');
+                    // Refresh canvas to update locked status
                     await loadCanvas(projectId!);
+                    await refreshNodeData(projectId!);
                   } catch (error: any) {
                     showToast(error.message || 'Failed to generate test data', 'error');
                   }
