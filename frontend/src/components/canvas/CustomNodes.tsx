@@ -1,5 +1,6 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
+import { createPortal } from 'react-dom';
 import { 
   Database, Globe, Settings, Wrench, Lock, ClipboardCheck, 
   CheckCircle, Workflow as WorkflowIcon, LucideIcon
@@ -102,20 +103,46 @@ const statusStyles = {
 export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeData>) => {
   const style = nodeStyles[data.type] || nodeStyles.element;
   const status = data.status || 'draft';
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   
   // Determine if this is a system-wide component
   const isSystemComponent = data.type === 'auth' || data.groupType === 'system' || data.isSystemWide;
 
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (data.description) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 8,
+      });
+      setShowTooltip(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setShowTooltip(false);
+  };
+
   return (
-    <div className="group relative hover:z-[9999]">
-      {/* Hover Tooltip */}
-      {data.description && (
-        <div className="invisible group-hover:visible absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full w-64 pointer-events-none z-[10000]">
-          <div className="bg-gray-900/95 backdrop-blur-xl text-white text-xs rounded-xl px-3 py-2 shadow-2xl border border-white/10">
+    <>
+      {/* Tooltip rendered in portal */}
+      {showTooltip && data.description && createPortal(
+        <div 
+          className="fixed pointer-events-none transition-opacity duration-200"
+          style={{
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y}px`,
+            transform: 'translate(-50%, -100%)',
+            zIndex: 10000,
+          }}
+        >
+          <div className="bg-gray-900/95 backdrop-blur-xl text-white text-xs rounded-xl px-3 py-2 shadow-2xl border border-white/10 w-64">
             <p className="leading-relaxed">{data.description}</p>
             <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-gray-900/95 rotate-45 border-r border-b border-white/10" />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <div
@@ -128,6 +155,8 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
             : undefined,
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)',
         }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* Subtle accent line at top */}
         <div className={`absolute top-0 left-0 right-0 h-[2px] ${style.accent} opacity-40`} />
@@ -167,7 +196,7 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
           className="!bg-gray-400/80 !w-3 !h-3 !border-2 !border-white"
         />
       </div>
-    </div>
+    </>
   );
 });
 
