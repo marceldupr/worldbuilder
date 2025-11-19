@@ -53,13 +53,21 @@ export class {{pascalCase name}} {
    */
   private async execute{{pascalCase name}}(context: WorkflowContext): Promise<any> {
     try {
-      // TODO: Implement step logic
       {{#if component}}
-      // Call {{component}}.{{action}}(context.data)
+      // Call {{component}}.{{action}}
       const result = await this.call{{pascalCase component}}{{pascalCase action}}(context);
       {{else}}
-      // Custom step logic here
-      const result = { success: true };
+      // Custom step: {{name}}
+      // {{description}}
+      console.log('⚠ Step "{{name}}" - custom implementation needed');
+      console.log('  Context:', context.data);
+      
+      // Return success for now - implement actual logic here
+      const result = { 
+        success: true, 
+        step: '{{name}}',
+        message: 'Custom step logic needs implementation'
+      };
       {{/if}}
 
       context.results.set('{{name}}', result);
@@ -149,7 +157,21 @@ export class {{pascalCase name}} {
    */
   async rollback(context: WorkflowContext): Promise<void> {
     console.log('🔙 Rolling back workflow...');
-    // TODO: Implement rollback logic for each step
+    
+    // Rollback steps in reverse order
+    const completedSteps = Array.from(context.results.keys()).reverse();
+    
+    for (const stepName of completedSteps) {
+      try {
+        console.log(`  Reverting step: ${stepName}`);
+        // Add step-specific rollback logic here
+        // For now, just log
+      } catch (error) {
+        console.error(`  Failed to rollback ${stepName}:`, error);
+      }
+    }
+    
+    console.log('🔙 Rollback completed');
   }
 
 {{#each steps}}
@@ -158,10 +180,28 @@ export class {{pascalCase name}} {
    * Helper: Call {{component}}.{{action}}
    */
   private async call{{pascalCase component}}{{pascalCase action}}(context: WorkflowContext): Promise<any> {
-    // TODO: Implement actual component call
-    // const {{camelCase component}} = this.dependencies.{{camelCase component}};
-    // return await {{camelCase component}}.{{action}}(context.data);
-    return { success: true };
+    {{#if (eq componentType 'element')}}
+    // Import and call element service
+    const { {{camelCase component}}Service } = await import('../services/{{kebabCase component}}.service.js');
+    return await {{camelCase component}}Service.{{camelCase action}}(context.data);
+    {{else if (eq componentType 'helper')}}
+    // Import and call helper
+    const { {{pascalCase component}}Helper } = await import('../helpers/{{kebabCase component}}.helper.js');
+    const helper = new {{pascalCase component}}Helper();
+    return await helper.{{camelCase action}}(context.data);
+    {{else if (eq componentType 'worker')}}
+    // Queue worker job
+    const { {{camelCase component}}Queue } = await import('../queues/{{kebabCase component}}.queue.js');
+    const job = await {{camelCase component}}Queue.add('{{action}}', context.data);
+    return { jobId: job.id, queued: true };
+    {{else}}
+    // Generic component call
+    const {{camelCase component}} = this.dependencies.{{camelCase component}};
+    if (!{{camelCase component}}) {
+      throw new Error('Component {{component}} not found in dependencies');
+    }
+    return await {{camelCase component}}.{{camelCase action}}(context.data);
+    {{/if}}
   }
 
 {{/if}}

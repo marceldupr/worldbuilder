@@ -44,7 +44,7 @@ export class CodeGeneratorService {
     files.push(await this.generateReadme(project));
 
     // Generate .env.example
-    files.push(this.generateEnvExample());
+    files.push(this.generateEnvExample(project));
 
     // Generate Prisma schema
     const prismaSchema = await this.generatePrismaSchema(project.components);
@@ -496,13 +496,152 @@ Generated with ❤️ by [Worldbuilder](https://worldbuilder.dev)
   /**
    * Generate .env.example
    */
-  private generateEnvExample(): GeneratedFile {
+  private generateEnvExample(project: any): GeneratedFile {
+    const helpers = project.components.filter((c: any) => c.type === 'helper');
+    const hasWorkers = project.components.some((c: any) => c.type === 'worker');
+    
+    // Detect which helper integrations are used
+    const hasEmail = helpers.some((h: any) => h.schema?.integration === 'sendgrid');
+    const hasPayment = helpers.some((h: any) => h.schema?.integration === 'stripe');
+    const hasSMS = helpers.some((h: any) => h.schema?.integration === 'twilio');
+    const hasStorage = helpers.some((h: any) => h.schema?.integration === 'supabase');
+    
+    let content = `# ${project.name} - Environment Variables
+# Copy this file to .env and fill in your actual values
+
+# =============================================================================
+# CORE CONFIGURATION
+# =============================================================================
+
+# Database connection string
+# Format: postgresql://username:password@host:port/database
+DATABASE_URL=postgresql://user:password@localhost:5432/${templateHelpers.kebabCase(project.name)}
+
+# Server port
+PORT=3001
+
+# Node environment (development, production, test)
+NODE_ENV=development
+
+# Application URL (for callbacks, emails, etc.)
+APP_URL=http://localhost:3001
+
+`;
+
+    // Add Redis if workers are used
+    if (hasWorkers) {
+      content += `# =============================================================================
+# QUEUE / WORKERS (Redis)
+# =============================================================================
+
+# Redis connection for BullMQ workers
+REDIS_HOST=localhost
+REDIS_PORT=6379
+# REDIS_PASSWORD=your_redis_password_if_needed
+
+`;
+    }
+
+    // Add SendGrid config
+    if (hasEmail) {
+      content += `# =============================================================================
+# EMAIL SERVICE (SendGrid)
+# =============================================================================
+
+# SendGrid API Key - Get from https://app.sendgrid.com/settings/api_keys
+SENDGRID_API_KEY=your_sendgrid_api_key_here
+
+# Default "From" email address for transactional emails
+FROM_EMAIL=noreply@${templateHelpers.kebabCase(project.name)}.com
+
+`;
+    }
+
+    // Add Stripe config
+    if (hasPayment) {
+      content += `# =============================================================================
+# PAYMENT PROCESSING (Stripe)
+# =============================================================================
+
+# Stripe Secret Key - Get from https://dashboard.stripe.com/apikeys
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key_here
+
+# Stripe Publishable Key (for frontend)
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key_here
+
+# Stripe Webhook Secret (for webhook signature verification)
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
+
+`;
+    }
+
+    // Add Twilio config
+    if (hasSMS) {
+      content += `# =============================================================================
+# SMS SERVICE (Twilio)
+# =============================================================================
+
+# Twilio credentials - Get from https://console.twilio.com/
+TWILIO_ACCOUNT_SID=your_twilio_account_sid_here
+TWILIO_AUTH_TOKEN=your_twilio_auth_token_here
+
+# Your Twilio phone number (for SMS)
+TWILIO_PHONE_NUMBER=+1234567890
+
+# Optional: WhatsApp-enabled number
+TWILIO_WHATSAPP_NUMBER=+1234567890
+
+`;
+    }
+
+    // Add Supabase config
+    if (hasStorage) {
+      content += `# =============================================================================
+# FILE STORAGE (Supabase Storage)
+# =============================================================================
+
+# Supabase project URL and service key
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your_supabase_anon_key_here
+
+# Default storage bucket name
+STORAGE_BUCKET=files
+
+`;
+    }
+
+    // Add auth/security section
+    content += `# =============================================================================
+# SECURITY & AUTHENTICATION
+# =============================================================================
+
+# JWT secret for token signing (generate a strong random string)
+JWT_SECRET=your_jwt_secret_here_change_in_production
+
+# JWT expiration time (e.g., "7d", "24h", "60m")
+JWT_EXPIRES_IN=7d
+
+# CORS allowed origins (comma-separated)
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+
+`;
+
+    // Add optional monitoring/logging section
+    content += `# =============================================================================
+# OPTIONAL: MONITORING & LOGGING
+# =============================================================================
+
+# Sentry DSN for error tracking (optional)
+# SENTRY_DSN=https://your-sentry-dsn@sentry.io/123456
+
+# Log level (error, warn, info, http, verbose, debug, silly)
+LOG_LEVEL=info
+
+`;
+
     return {
       path: '.env.example',
-      content: `DATABASE_URL=postgresql://user:password@localhost:5432/database
-PORT=3001
-NODE_ENV=development
-`,
+      content,
     };
   }
 
@@ -510,10 +649,31 @@ NODE_ENV=development
    * Generate main server file
    */
   private async generateServerFile(project: any): Promise<GeneratedFile> {
+    // Get all manipulator (API) components
+    const manipulators = project.components.filter((c: any) => c.type === 'manipulator');
+    
+    // Generate imports for all controllers
+    const imports = manipulators
+      .map((m: any) => {
+        const elementName = m.schema?.linkedElement || m.name;
+        return `import ${templateHelpers.camelCase(elementName)}Routes from './controllers/${templateHelpers.kebabCase(elementName)}.controller.js';`;
+      })
+      .join('\n');
+    
+    // Generate route registrations
+    const routes = manipulators
+      .map((m: any) => {
+        const elementName = m.schema?.linkedElement || m.name;
+        const basePath = m.schema?.basePath || `/${templateHelpers.kebabCase(elementName)}`;
+        return `app.use('${basePath}', ${templateHelpers.camelCase(elementName)}Routes);`;
+      })
+      .join('\n');
+    
     const content = `import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
+${imports}
 
 dotenv.config();
 
@@ -527,14 +687,42 @@ app.use(express.json());
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', project: '${project.name}' });
+  res.json({ 
+    status: 'ok', 
+    project: '${project.name}',
+    timestamp: new Date().toISOString()
+  });
 });
 
-// TODO: Import and use generated controllers
+// API Routes
+${routes || '// No API routes generated yet'}
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ 
+    error: 'Not Found',
+    path: req.path
+  });
+});
+
+// Error handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error'
+  });
+});
 
 // Start server
 app.listen(PORT, () => {
   console.log(\`🚀 ${project.name} running on port \${PORT}\`);
+  console.log(\`📍 Health check: http://localhost:\${PORT}/health\`);
+  ${manipulators.length > 0 ? `console.log('\\n📡 API Endpoints:');` : ''}
+  ${manipulators.map((m: any) => {
+    const elementName = m.schema?.linkedElement || m.name;
+    const basePath = m.schema?.basePath || `/${templateHelpers.kebabCase(elementName)}`;
+    return `console.log('  ${basePath}');`;
+  }).join('\n  ')}
 });
 
 export default app;

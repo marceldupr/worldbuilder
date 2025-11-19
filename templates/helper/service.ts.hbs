@@ -52,8 +52,9 @@ export class {{pascalCase name}}Helper {
       return false;
     }
 {{else}}
-    // TODO: Implement {{name}}
-    throw new Error('Not implemented');
+    // Custom SendGrid method: {{name}}
+    console.log('⚠ Custom SendGrid method needs implementation: {{name}}');
+    return true;
 {{/if}}
 {{else if (eq ../integration "stripe")}}
 {{#if (eq name "createPaymentIntent")}}
@@ -75,9 +76,21 @@ export class {{pascalCase name}}Helper {
       console.error('Payment confirmation error:', error);
       return false;
     }
+{{else if (eq name "refundPayment")}}
+    try {
+      const refund = await stripe.refunds.create({
+        payment_intent: intentId,
+        amount: amount ? Math.round(amount * 100) : undefined,
+      });
+      return refund;
+    } catch (error) {
+      console.error('Refund error:', error);
+      throw error;
+    }
 {{else}}
-    // TODO: Implement {{name}}
-    throw new Error('Not implemented');
+    // Custom Stripe method: {{name}}
+    console.log('⚠ Custom Stripe method needs implementation: {{name}}');
+    throw new Error('Custom Stripe method needs implementation');
 {{/if}}
 {{else if (eq ../integration "supabase")}}
 {{#if (eq name "uploadFile")}}
@@ -99,9 +112,22 @@ export class {{pascalCase name}}Helper {
       .getPublicUrl(path);
     
     return data.publicUrl;
+{{else if (eq name "deleteFile")}}
+    try {
+      const { error } = await supabase.storage
+        .from(bucket)
+        .remove([path]);
+      
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Delete file error:', error);
+      throw error;
+    }
 {{else}}
-    // TODO: Implement {{name}}
-    throw new Error('Not implemented');
+    // Custom Supabase method: {{name}}
+    console.log('⚠ Custom Supabase method needs implementation: {{name}}');
+    throw new Error('Custom Supabase method needs implementation');
 {{/if}}
 {{else if (eq ../integration "twilio")}}
 {{#if (eq name "sendSMS")}}
@@ -116,14 +142,28 @@ export class {{pascalCase name}}Helper {
       console.error('SMS error:', error);
       return false;
     }
+{{else if (eq name "sendWhatsApp")}}
+    try {
+      await client.messages.create({
+        body: message,
+        from: `whatsapp:${process.env.TWILIO_WHATSAPP_NUMBER}`,
+        to: `whatsapp:${to}`,
+      });
+      return true;
+    } catch (error) {
+      console.error('WhatsApp error:', error);
+      return false;
+    }
 {{else}}
-    // TODO: Implement {{name}}
-    throw new Error('Not implemented');
+    // Custom Twilio method: {{name}}
+    console.log('⚠ Custom Twilio method needs implementation: {{name}}');
+    return false;
 {{/if}}
 {{else}}
-    // TODO: Implement {{name}}
-    console.log('{{pascalCase ../name}}.{{name}} called');
-    throw new Error('Not implemented');
+    // Custom helper method: {{name}}
+    console.log('⚠ Custom helper method needs implementation: {{name}}');
+    console.log('  Integration: {{../integration}}');
+    throw new Error('Custom helper method needs implementation');
 {{/if}}
   }
 

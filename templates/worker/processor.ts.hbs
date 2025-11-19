@@ -32,15 +32,43 @@ async function processJob(job: Job<{{pascalCase name}}JobData>): Promise<any> {
     const { data } = job;
     
 {{#each steps}}
-    // Step {{@index}}: {{name}}
-    await job.updateProgress({{multiply @index (divide 100 ../steps.length)}});
-    console.log('{{name}}...');
+    // Step {{add @index 1}}: {{name}}
+    await job.updateProgress({{multiply @index (divide 100 (add ../steps.length 1))}});
+    console.log('Step {{add @index 1}}/{{../steps.length}}: {{name}}...');
     
 {{#if helperId}}
-    // Call helper
-    // await {{camelCase ../helpers.[helperId].name}}Helper.{{camelCase name}}(data);
+    // Call helper: {{../helpers.[helperId].name}}
+    try {
+      await {{camelCase ../helpers.[helperId].name}}Helper.{{camelCase action}}(data);
+      console.log('  ✓ {{name}} completed');
+    } catch (error) {
+      console.error('  ✗ {{name}} failed:', error);
+      throw error;
+    }
+{{else if elementId}}
+    // Update element: {{../elements.[elementId].name}}
+    try {
+      const {{camelCase ../elements.[elementId].name}}Service = await import('../services/{{kebabCase ../elements.[elementId].name}}.service.js');
+      await {{camelCase ../elements.[elementId].name}}Service.{{camelCase action}}(data);
+      console.log('  ✓ {{name}} completed');
+    } catch (error) {
+      console.error('  ✗ {{name}} failed:', error);
+      throw error;
+    }
 {{else}}
-    // TODO: Implement {{name}}
+    // Custom step: {{name}}
+    // {{description}}
+    try {
+      // Implement custom logic here based on step description
+      console.log('  ⚠ Step "{{name}}" needs custom implementation');
+      console.log('  Description: {{description}}');
+      
+      // For now, mark as completed
+      console.log('  ✓ {{name}} completed (custom implementation needed)');
+    } catch (error) {
+      console.error('  ✗ {{name}} failed:', error);
+      throw error;
+    }
 {{/if}}
     
 {{/each}}

@@ -23,17 +23,51 @@ export class {{pascalCase name}} {
    */
   async beforeCreate(data: any): Promise<void> {
 {{#if enableValidation}}
-    // Validate required fields
+    // Validation rules for {{linkedElement}}
     {{#each rules}}
     {{#if (eq trigger 'before_create')}}
-    // {{description}}
+    // Rule: {{description}}
     {{#each validations}}
-    if (!this.validate{{pascalCase name}}(data)) {
-      throw new Error('{{../errorMessage}}');
+    {{#if (eq condition 'required')}}
+    if (!data.{{field}}) {
+      throw new Error('{{errorMessage}}');
     }
+    {{else if (eq condition 'unique')}}
+    const existing = await this.prisma.{{camelCase ../../linkedElement}}.findFirst({
+      where: { {{field}}: data.{{field}} }
+    });
+    if (existing) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{else if (eq condition 'min_length')}}
+    if (data.{{field}} && data.{{field}}.length < {{value}}) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{else if (eq condition 'max_length')}}
+    if (data.{{field}} && data.{{field}}.length > {{value}}) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{else if (eq condition 'min_value')}}
+    if (data.{{field}} !== undefined && data.{{field}} < {{value}}) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{else if (eq condition 'max_value')}}
+    if (data.{{field}} !== undefined && data.{{field}} > {{value}}) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{else if (eq condition 'pattern')}}
+    if (data.{{field}} && !{{value}}.test(data.{{field}})) {
+      throw new Error('{{errorMessage}}');
+    }
+    {{else}}
+    // Custom validation: {{condition}}
+    // {{errorMessage}}
+    {{/if}}
     {{/each}}
     {{/if}}
     {{/each}}
+{{else}}
+    // No validation rules defined
 {{/if}}
   }
 
@@ -58,16 +92,35 @@ export class {{pascalCase name}} {
    */
   async beforeUpdate(existing: any, updates: any): Promise<void> {
 {{#if enableValidation}}
+    // Validation rules for updates
     {{#each rules}}
     {{#if (eq trigger 'before_update')}}
-    // {{description}}
+    // Rule: {{description}}
     {{#each validations}}
-    if (!this.validate{{pascalCase name}}(updates)) {
-      throw new Error('{{../errorMessage}}');
+    {{#if (eq condition 'immutable')}}
+    if (updates.{{field}} !== undefined && updates.{{field}} !== existing.{{field}}) {
+      throw new Error('{{errorMessage}}');
     }
+    {{else if (eq condition 'unique')}}
+    if (updates.{{field}}) {
+      const duplicate = await this.prisma.{{camelCase ../../linkedElement}}.findFirst({
+        where: { 
+          {{field}}: updates.{{field}},
+          id: { not: existing.id }
+        }
+      });
+      if (duplicate) {
+        throw new Error('{{errorMessage}}');
+      }
+    }
+    {{else}}
+    // Use same validation as beforeCreate
+    {{/if}}
     {{/each}}
     {{/if}}
     {{/each}}
+{{else}}
+    // No validation rules defined
 {{/if}}
   }
 
