@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { 
   Database, Globe, Settings, Wrench, Lock, ClipboardCheck, 
-  CheckCircle, Workflow as WorkflowIcon, LucideIcon, Package, Layout
+  CheckCircle, Workflow as WorkflowIcon, LucideIcon
 } from 'lucide-react';
 
 interface ComponentNodeData {
@@ -23,62 +23,71 @@ const nodeStyles: Record<string, {
   bg: string;
   border: string;
   text: string;
+  accent: string;
   Icon: LucideIcon;
   displayName: string;
 }> = {
   element: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-400',
-    text: 'text-blue-900',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-300/30',
+    text: 'text-blue-700',
+    accent: 'bg-blue-500',
     Icon: Database,
     displayName: 'Element',
   },
   manipulator: {
-    bg: 'bg-indigo-50',
-    border: 'border-indigo-400',
-    text: 'text-indigo-900',
+    bg: 'bg-indigo-500/10',
+    border: 'border-indigo-300/30',
+    text: 'text-indigo-700',
+    accent: 'bg-indigo-500',
     Icon: Globe,
     displayName: 'Data API',
   },
   worker: {
-    bg: 'bg-purple-50',
-    border: 'border-purple-400',
-    text: 'text-purple-900',
+    bg: 'bg-purple-500/10',
+    border: 'border-purple-300/30',
+    text: 'text-purple-700',
+    accent: 'bg-purple-500',
     Icon: Settings,
     displayName: 'Worker',
   },
   helper: {
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-400',
-    text: 'text-yellow-900',
+    bg: 'bg-yellow-500/10',
+    border: 'border-yellow-300/30',
+    text: 'text-yellow-700',
+    accent: 'bg-yellow-500',
     Icon: Wrench,
     displayName: 'Helper',
   },
   auth: {
-    bg: 'bg-cyan-50',
-    border: 'border-cyan-400',
-    text: 'text-cyan-900',
+    bg: 'bg-cyan-500/10',
+    border: 'border-cyan-300/30',
+    text: 'text-cyan-700',
+    accent: 'bg-cyan-500',
     Icon: Lock,
     displayName: 'Auth',
   },
   auditor: {
-    bg: 'bg-green-50',
-    border: 'border-green-400',
-    text: 'text-green-900',
+    bg: 'bg-green-500/10',
+    border: 'border-green-300/30',
+    text: 'text-green-700',
+    accent: 'bg-green-500',
     Icon: ClipboardCheck,
     displayName: 'Auditor',
   },
   enforcer: {
-    bg: 'bg-red-50',
-    border: 'border-red-400',
-    text: 'text-red-900',
+    bg: 'bg-red-500/10',
+    border: 'border-red-300/30',
+    text: 'text-red-700',
+    accent: 'bg-red-500',
     Icon: CheckCircle,
     displayName: 'Enforcer',
   },
   workflow: {
-    bg: 'bg-pink-50',
-    border: 'border-pink-400',
-    text: 'text-pink-900',
+    bg: 'bg-pink-500/10',
+    border: 'border-pink-300/30',
+    text: 'text-pink-700',
+    accent: 'bg-pink-500',
     Icon: WorkflowIcon,
     displayName: 'Workflow',
   },
@@ -96,115 +105,68 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
   
   // Determine if this is a system-wide component
   const isSystemComponent = data.type === 'auth' || data.groupType === 'system' || data.isSystemWide;
-  
-  // Check if this API will generate frontend UI
-  // Works with: explicit linkedElement/linkedElementId OR inferred from name pattern (e.g., "Task API" → "Task")
-  const inferredElement = data.type === 'manipulator' && data.label?.includes(' API') 
-    ? data.label.replace(' API', '').trim() 
-    : null;
-  const generatesFrontend = data.type === 'manipulator' && (data.linkedElement || data.linkedElementId || inferredElement);
-  
-  // Check if this worker uses Redis queue (future enhancement)
-  const usesQueue = data.type === 'worker' && data.hasRedis;
 
   return (
-    <div
-      className={`rounded-lg border-2 ${style.border} ${style.bg} ${
-        selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
-      } ${isSystemComponent ? 'ring-2 ring-purple-400 ring-opacity-50' : ''} min-w-[200px] shadow-md transition-all hover:shadow-lg relative`}
-    >
-      {/* Frontend UI indicator (top-right for APIs) */}
-      {generatesFrontend && (
-        <div 
-          className="absolute -top-3 -right-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full shadow-xl font-bold flex items-center space-x-1.5 z-10 ring-2 ring-white"
-          title="Frontend UI will be generated for this API"
-        >
-          <Layout className="w-4 h-4" />
-          <span>UI</span>
-        </div>
-      )}
-
-      {/* System-wide indicator */}
-      {isSystemComponent && (
-        <div className="absolute -top-3 -left-3 bg-purple-500 text-white text-xs px-2.5 py-1 rounded-full shadow-lg font-semibold flex items-center space-x-1 z-10 ring-2 ring-white">
-          <Globe className="w-3 h-3" />
-          <span>System</span>
-        </div>
-      )}
-
-      {/* Group indicator (bottom-left) */}
-      {data.groupName && (
-        <div className={`absolute -bottom-2 -left-2 text-xs px-2 py-0.5 rounded-full shadow-md font-medium flex items-center space-x-1 ${
-          data.groupType === 'system' ? 'bg-purple-500 text-white' :
-          data.groupType === 'infrastructure' ? 'bg-gray-500 text-white' :
-          'bg-blue-500 text-white'
-        }`}>
-          <Package className="w-3 h-3" />
-          <span>{data.groupName}</span>
-        </div>
-      )}
-      
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="!bg-gray-400"
-      />
-
-      <div className="p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <style.Icon className={`w-5 h-5 ${style.text}`} />
-            <div className={`h-2 w-2 rounded-full ${statusStyles[status]}`} />
-            {data.locked && (
-              <Lock className="w-4 h-4 text-purple-600" />
-            )}
+    <div className="group relative hover:z-[9999]">
+      {/* Hover Tooltip */}
+      {data.description && (
+        <div className="invisible group-hover:visible absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full w-64 pointer-events-none z-[10000]">
+          <div className="bg-gray-900/95 backdrop-blur-xl text-white text-xs rounded-xl px-3 py-2 shadow-2xl border border-white/10">
+            <p className="leading-relaxed">{data.description}</p>
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-gray-900/95 rotate-45 border-r border-b border-white/10" />
           </div>
-          <span className="rounded bg-white px-2 py-0.5 text-xs font-medium text-gray-600">
-            {style.displayName || data.type}
-          </span>
+        </div>
+      )}
+
+      <div
+        className={`rounded-2xl border ${style.border} ${style.bg} backdrop-blur-xl ${
+          selected ? 'ring-2 ring-blue-400/50 ring-offset-0' : ''
+        } ${isSystemComponent ? 'ring-1 ring-purple-300/40' : ''} w-[180px] h-[100px] transition-all hover:shadow-lg relative flex flex-col overflow-hidden`}
+        style={{
+          background: selected 
+            ? `linear-gradient(135deg, ${style.bg.replace('bg-', 'rgba(var(--tw-')})20%, rgba(255,255,255,0.9))`
+            : undefined,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)',
+        }}
+      >
+        {/* Subtle accent line at top */}
+        <div className={`absolute top-0 left-0 right-0 h-[2px] ${style.accent} opacity-40`} />
+        
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="!bg-gray-400/80 !w-3 !h-3 !border-2 !border-white"
+        />
+
+        <div className="p-3 flex-1 flex flex-col backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-1.5">
+              <style.Icon className={`w-4 h-4 ${style.text}`} strokeWidth={2} />
+              <div className={`h-1.5 w-1.5 rounded-full ${statusStyles[status]} shadow-sm`} />
+              {data.locked && (
+                <Lock className="w-3 h-3 text-purple-600" />
+              )}
+            </div>
+            <span className="rounded-lg bg-white/60 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-gray-600 border border-white/40">
+              {style.displayName}
+            </span>
+          </div>
+
+          <h3 className={`text-sm font-bold ${style.text} truncate`}>
+            {data.label}
+          </h3>
+          
+          <div className="mt-auto text-[10px] text-gray-500 truncate font-medium">
+            {data.groupName || '\u00A0'}
+          </div>
         </div>
 
-        <h3 className={`text-sm font-semibold ${style.text}`}>
-          {data.label}
-        </h3>
-
-        {data.description && (
-          <p className="mt-1 text-xs text-gray-600 line-clamp-1">
-            {data.description.length > 60 
-              ? data.description.substring(0, 60) + '...' 
-              : data.description
-            }
-          </p>
-        )}
-
-        {/* Inline indicators */}
-        <div className="mt-2 flex items-center gap-1.5">
-          {generatesFrontend && (
-            <div className="flex items-center space-x-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md text-xs font-semibold">
-              <Layout className="w-3 h-3" />
-              <span>Admin UI</span>
-            </div>
-          )}
-          {data.type === 'worker' && (
-            <div className="flex items-center space-x-1 bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-xs font-semibold">
-              <Settings className="w-3 h-3" />
-              <span>{usesQueue ? 'Queue' : 'Direct'}</span>
-            </div>
-          )}
-          {(data.linkedElement || inferredElement) && (
-            <div className="flex items-center space-x-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-medium">
-              <Database className="w-3 h-3" />
-              <span>{data.linkedElement || inferredElement}</span>
-            </div>
-          )}
-        </div>
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="!bg-gray-400/80 !w-3 !h-3 !border-2 !border-white"
+        />
       </div>
-
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="!bg-gray-400"
-      />
     </div>
   );
 });

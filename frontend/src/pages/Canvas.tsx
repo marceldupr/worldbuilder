@@ -18,9 +18,10 @@ import { ComponentNode } from '../components/canvas/CustomNodes';
 import { GroupNode } from '../components/canvas/GroupNode';
 import { GroupModal } from '../components/modals/GroupModal';
 import { 
-  ArrowLeft, Code, Github, Edit, Database, Globe, 
+  ArrowLeft, Code, Github, Database, Globe, 
   Settings, Wrench, Lock, ClipboardCheck, CheckCircle, Workflow as WorkflowIcon,
-  FolderKanban, Trash2, Info, X, Sparkles, TestTube2, Zap, FileJson
+  FolderKanban, Trash2, Info, X, Sparkles, TestTube2, Zap, FileJson,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { ElementModal } from '../components/modals/ElementModal';
 import { ManipulatorModal } from '../components/modals/ManipulatorModal';
@@ -105,6 +106,8 @@ function CanvasContent() {
     componentName: string;
   } | null>(null);
   const [showCustomEndpoint, setShowCustomEndpoint] = useState(false);
+  const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
+  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
   useEffect(() => {
     if (projectId) {
@@ -831,9 +834,37 @@ function CanvasContent() {
       {/* Canvas area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Component library sidebar */}
-        <aside className="w-72 border-r border-gray-200/50 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm p-4 overflow-y-auto h-full">
-          {/* Magic Mode Buttons */}
-          <div className="mb-5 space-y-2">
+        <aside className={`${isLeftPanelCollapsed ? 'w-12' : 'w-72'} border-r border-gray-200/50 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm overflow-hidden h-full transition-all duration-300 relative`}>
+          {isLeftPanelCollapsed ? (
+            <div className="h-full flex flex-col items-center justify-center relative">
+              {/* Collapse Toggle Button - Middle of border */}
+              <button
+                onClick={() => setIsLeftPanelCollapsed(false)}
+                className="absolute right-0 translate-x-1/2 group p-1 rounded-full bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
+                title="Expand components panel"
+              >
+                <ChevronRight className="w-3 h-3 text-gray-500 group-hover:text-gray-700 transition-colors" strokeWidth={2.5} />
+              </button>
+              
+              {/* Vertical Text */}
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+                Components
+              </span>
+            </div>
+          ) : (
+            <>
+              {/* Collapse Toggle Button - Middle of border */}
+              <button
+                onClick={() => setIsLeftPanelCollapsed(true)}
+                className="absolute top-1/2 -translate-y-1/2 right-0 translate-x-1/2 z-10 group p-1 rounded-full bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
+                title="Collapse panel"
+              >
+                <ChevronLeft className="w-3 h-3 text-gray-500 group-hover:text-gray-700 transition-colors" strokeWidth={2.5} />
+              </button>
+
+              <div className="p-4">
+              {/* Magic Mode Buttons */}
+              <div className="mb-5 space-y-2">
             <button
               onClick={() => {
                 showToast('🪄 Magic Mode coming soon!', 'info');
@@ -869,46 +900,6 @@ function CanvasContent() {
               </p>
             </button>
           </div>
-
-          {/* Groups List */}
-          {groups.length > 0 && (
-            <div className="mb-5">
-              <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3 px-1">
-                Groups ({groups.length})
-              </h4>
-              <div className="space-y-2">
-                {groups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-white border border-gray-200/80 hover:border-gray-300 hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center space-x-2 flex-1 min-w-0">
-                      <button
-                        onClick={() => toggleGroupCollapse(group.id)}
-                        className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
-                      >
-                        {group.collapsed ? '▶' : '▼'}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-gray-900 truncate">
-                          {group.name}
-                        </div>
-                        <div className="text-xs text-gray-500 font-medium">
-                          {group.nodeIds.length} items
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleEditGroup(group)}
-                      className="text-blue-600 hover:text-blue-700 ml-2 p-1.5 rounded-lg hover:bg-blue-50 transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="mb-4 flex items-center justify-between px-1">
             <div>
@@ -1038,6 +1029,9 @@ function CanvasContent() {
               );
             })}
           </div>
+              </div>
+            </>
+          )}
         </aside>
 
         {/* Canvas */}
@@ -1075,6 +1069,8 @@ function CanvasContent() {
             nodeTypes={nodeTypes}
             fitView
             multiSelectionKeyCode="Shift"
+            selectionOnDrag
+            panOnScroll
             defaultEdgeOptions={{
               type: 'smoothstep',
               animated: true,
@@ -1092,8 +1088,36 @@ function CanvasContent() {
         </div>
 
         {/* Properties panel */}
-        <aside className="w-80 border-l border-gray-200/50 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm p-5 overflow-y-auto h-full">
-          <div className="mb-6">
+        <aside className={`${isRightPanelCollapsed ? 'w-12' : 'w-80'} border-l border-gray-200/50 bg-gradient-to-b from-gray-50/80 to-white/80 backdrop-blur-sm overflow-hidden h-full transition-all duration-300 relative`}>
+          {isRightPanelCollapsed ? (
+            <div className="h-full flex flex-col items-center justify-center relative">
+              {/* Collapse Toggle Button - Middle of border */}
+              <button
+                onClick={() => setIsRightPanelCollapsed(false)}
+                className="absolute left-0 -translate-x-1/2 group p-1 rounded-full bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
+                title="Expand properties panel"
+              >
+                <ChevronLeft className="w-3 h-3 text-gray-500 group-hover:text-gray-700 transition-colors" strokeWidth={2.5} />
+              </button>
+              
+              {/* Vertical Text */}
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-widest" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+                Properties
+              </span>
+            </div>
+          ) : (
+            <>
+              {/* Collapse Toggle Button - Middle of border */}
+              <button
+                onClick={() => setIsRightPanelCollapsed(true)}
+                className="absolute top-1/2 -translate-y-1/2 left-0 -translate-x-1/2 z-10 group p-1 rounded-full bg-white border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
+                title="Collapse panel"
+              >
+                <ChevronRight className="w-3 h-3 text-gray-500 group-hover:text-gray-700 transition-colors" strokeWidth={2.5} />
+              </button>
+
+              <div className="p-5 overflow-y-auto h-full">
+              <div className="mb-6">
             <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3">
               Project Info
             </h3>
@@ -1163,97 +1187,9 @@ function CanvasContent() {
               </div>
             </div>
           )}
-          
-          <div className="mt-6">
-            <h3 className="mb-3 text-xs font-bold text-gray-600 uppercase tracking-wider">
-              Quick Actions
-            </h3>
-            <div className="space-y-3">
-              <button
-                onClick={() => setShowCodePreview(true)}
-                disabled={componentNodes.length === 0}
-                className="w-full rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 p-4 text-left hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3 transition-all group"
-              >
-                <div className="p-2 rounded-lg bg-blue-500 text-white group-hover:scale-110 transition-transform">
-                  <Code className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-blue-900">Generate Code</div>
-                  <div className="text-xs text-blue-600">Preview & download</div>
-                </div>
-              </button>
-              <button
-                onClick={async () => {
-                  if (componentNodes.length === 0) return;
-                  try {
-                    const project = await projectsApi.get(projectId!);
-                    const schemaExport = {
-                      project: {
-                        id: project.id,
-                        name: project.name,
-                        description: project.description,
-                        exportedAt: new Date().toISOString(),
-                      },
-                      components: project.components.map((c: any) => ({
-                        id: c.id,
-                        type: c.type,
-                        name: c.name,
-                        description: c.description,
-                        schema: c.schema,
-                        status: c.status,
-                        locked: c.locked,
-                      })),
-                      canvas: project.canvasData,
-                      metadata: {
-                        totalComponents: project.components.length,
-                        version: '1.0',
-                        generator: 'Worldbuilder',
-                      }
-                    };
-                    const blob = new Blob([JSON.stringify(schemaExport, null, 2)], { type: 'application/json' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    const sanitizedName = projectName
-                      .toLowerCase()
-                      .replace(/[^a-z0-9]+/g, '-')
-                      .replace(/^-+|-+$/g, '');
-                    a.download = `${sanitizedName}-schema.json`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                    showToast('Schema exported!', 'success');
-                  } catch (error: any) {
-                    showToast(error.message || 'Failed to export schema', 'error');
-                  }
-                }}
-                disabled={componentNodes.length === 0}
-                className="w-full rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 p-4 text-left hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3 transition-all group"
-              >
-                <div className="p-2 rounded-lg bg-purple-500 text-white group-hover:scale-110 transition-transform">
-                  <FileJson className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-purple-900">Export Schema</div>
-                  <div className="text-xs text-purple-600">Download JSON</div>
-                </div>
-              </button>
-              <button
-                onClick={() => setShowGitHubPush(true)}
-                disabled={componentNodes.length === 0}
-                className="w-full rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 p-4 text-left hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3 transition-all group"
-              >
-                <div className="p-2 rounded-lg bg-gray-900 text-white group-hover:scale-110 transition-transform">
-                  <Github className="w-5 h-5" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm font-bold text-gray-900">Push to GitHub</div>
-                  <div className="text-xs text-gray-600">Deploy your code</div>
-                </div>
-              </button>
-            </div>
-          </div>
+              </div>
+            </>
+          )}
         </aside>
       </div>
 

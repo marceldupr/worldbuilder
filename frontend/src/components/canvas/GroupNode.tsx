@@ -4,25 +4,25 @@ import { Edit, Trash2, ChevronRight } from 'lucide-react';
 
 const groupTypeColors = {
   system: {
-    bg: 'bg-purple-50',
-    border: 'border-purple-300',
-    headerBg: 'bg-purple-100',
-    text: 'text-purple-900',
-    badge: 'bg-purple-200 text-purple-800',
+    bg: 'bg-purple-50/30',
+    border: 'border-purple-200/40',
+    headerBg: 'bg-white/60',
+    text: 'text-purple-700',
+    badge: 'bg-purple-100 text-purple-700',
   },
   feature: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-300',
-    headerBg: 'bg-blue-100',
-    text: 'text-blue-900',
-    badge: 'bg-blue-200 text-blue-800',
+    bg: 'bg-blue-50/30',
+    border: 'border-blue-200/40',
+    headerBg: 'bg-white/60',
+    text: 'text-blue-700',
+    badge: 'bg-blue-100 text-blue-700',
   },
   infrastructure: {
-    bg: 'bg-gray-50',
-    border: 'border-gray-300',
-    headerBg: 'bg-gray-100',
-    text: 'text-gray-900',
-    badge: 'bg-gray-200 text-gray-800',
+    bg: 'bg-gray-50/30',
+    border: 'border-gray-200/40',
+    headerBg: 'bg-white/60',
+    text: 'text-gray-700',
+    badge: 'bg-gray-100 text-gray-700',
   },
 };
 
@@ -97,96 +97,87 @@ export const GroupNode = memo(({ data }: NodeProps) => {
 
   return (
     <div
-      className={`${colors.bg} ${colors.border} border-2 rounded-lg shadow-lg overflow-visible transition-shadow hover:shadow-xl`}
+      className={`${colors.bg} ${colors.border} border rounded-3xl backdrop-blur-2xl overflow-visible transition-all hover:shadow-xl group`}
       style={{
         minWidth: '300px',
-        minHeight: group.collapsed ? '60px' : '200px',
+        minHeight: group.collapsed ? '40px' : '200px',
         width: group.dimensions?.width || 400,
-        height: group.collapsed ? '60px' : group.dimensions?.height || 300,
+        height: group.collapsed ? '40px' : group.dimensions?.height || 300,
         pointerEvents: 'all',
         position: 'relative',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02)',
       }}
     >
       {/* Header */}
       <div 
-        className={`${colors.headerBg} px-4 py-3 flex items-center justify-between border-b ${colors.border} cursor-move`}
+        className={`${colors.headerBg} backdrop-blur-xl px-3 py-2 flex items-center justify-between cursor-move border-b border-white/20`}
+        style={{
+          borderTopLeftRadius: '1.5rem',
+          borderTopRightRadius: '1.5rem',
+        }}
       >
-        <div className="flex items-center space-x-3 flex-1">
+        <div className="flex items-center space-x-2 flex-1 min-w-0">
           <button
             onClick={() => onToggleCollapse(group.id)}
-            className={`${colors.text} hover:opacity-70 transition-transform ${group.collapsed ? '' : 'rotate-90'}`}
+            className={`${colors.text} hover:opacity-70 transition-transform ${group.collapsed ? '' : 'rotate-90'} flex-shrink-0`}
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-3 h-3" strokeWidth={2.5} />
           </button>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2">
-              <h3 className={`font-semibold ${colors.text}`}>{group.name}</h3>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${colors.badge}`}>
-                {group.type}
-              </span>
+              <h3 className={`text-xs font-bold ${colors.text} truncate`}>{group.name}</h3>
+              {group.nodeIds.length > 0 && (
+                <span className={`text-[10px] font-semibold ${colors.text} opacity-50 flex-shrink-0 px-1.5 py-0.5 rounded-full bg-white/40 backdrop-blur-sm`}>
+                  {group.nodeIds.length}
+                </span>
+              )}
             </div>
-            {group.description && !group.collapsed && (
-              <p className={`text-xs ${colors.text} opacity-70 mt-1`}>
-                {group.description}
-              </p>
-            )}
           </div>
         </div>
         
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(group)}
-            className={`${colors.text} hover:opacity-70 p-1 rounded hover:bg-white/50 transition-colors`}
+            className={`${colors.text} opacity-60 hover:opacity-100 p-1.5 rounded-lg hover:bg-white/60 backdrop-blur-sm transition-all`}
             title="Edit group"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="w-3 h-3" strokeWidth={2} />
           </button>
           <button
             onClick={() => onDelete(group.id)}
-            className="text-red-600 hover:text-red-700 p-1 rounded hover:bg-red-50 transition-colors"
+            className="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-white/60 backdrop-blur-sm transition-all"
             title="Delete group"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3 h-3" strokeWidth={2} />
           </button>
         </div>
       </div>
 
-      {/* Body - drop zone for components */}
+      {/* Body - subtle drop zone */}
       {!group.collapsed && (
-        <div className="p-4 h-full">
-          <div className={`border-2 border-dashed ${colors.border} rounded-lg h-full flex items-center justify-center ${colors.text} opacity-50 text-sm`}>
-            Drop components here
-          </div>
+        <div className="p-2 h-full backdrop-blur-sm">
+          {/* Clean glass interior - components sit naturally inside */}
         </div>
       )}
 
-      {/* Badge showing number of components */}
-      {!group.collapsed && group.nodeIds.length > 0 && (
-        <div className="absolute bottom-2 right-2">
-          <span className={`text-xs px-2 py-1 rounded-full ${colors.badge}`}>
-            {group.nodeIds.length} component{group.nodeIds.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-      )}
-
-      {/* Resize handles */}
+      {/* Resize handles - subtle and elegant */}
       {!group.collapsed && (
         <>
           {/* Right edge */}
           <div
-            className="nodrag absolute top-0 right-0 bottom-0 w-2 cursor-ew-resize hover:bg-blue-400/30 transition-colors"
+            className="nodrag absolute top-0 right-0 bottom-0 w-1 cursor-ew-resize hover:bg-white/40 transition-colors opacity-0 group-hover:opacity-100"
             onMouseDown={(e) => handleResizeStart(e, 'e')}
             style={{ zIndex: 10 }}
           />
           {/* Bottom edge */}
           <div
-            className="nodrag absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize hover:bg-blue-400/30 transition-colors"
+            className="nodrag absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-white/40 transition-colors opacity-0 group-hover:opacity-100"
             onMouseDown={(e) => handleResizeStart(e, 's')}
             style={{ zIndex: 10 }}
           />
           {/* Bottom-right corner */}
           <div
-            className="nodrag absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize hover:bg-blue-500/50 transition-colors rounded-tl"
+            className="nodrag absolute bottom-1 right-1 w-3 h-3 cursor-nwse-resize rounded-full bg-white/40 backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100 hover:scale-125"
             onMouseDown={(e) => handleResizeStart(e, 'se')}
             style={{ zIndex: 11 }}
           />
