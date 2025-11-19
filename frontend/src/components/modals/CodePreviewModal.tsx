@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { codeApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
 import { 
@@ -36,14 +38,15 @@ export function CodePreviewModal({ projectId, projectName, onClose }: CodePrevie
   const [magicInProgress, setMagicInProgress] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['/']));
   const [showLineNumbers, setShowLineNumbers] = useState(true);
+  const [includeFrontend, setIncludeFrontend] = useState(true); // New: Frontend generation toggle
 
   useEffect(() => {
     loadPreview();
-  }, [projectId]);
+  }, [projectId, includeFrontend]); // Reload when frontend toggle changes
 
   async function loadPreview() {
     try {
-      const result = await codeApi.preview(projectId);
+      const result = await codeApi.preview(projectId, includeFrontend);
       setFiles(result.files);
       if (result.files.length > 0) {
         setSelectedFile(result.files[0]);
@@ -96,7 +99,7 @@ export function CodePreviewModal({ projectId, projectName, onClose }: CodePrevie
     setDownloading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/code/download/${projectId}`,
+        `${import.meta.env.VITE_API_URL}/api/code/download/${projectId}?includeFrontend=${includeFrontend}`,
         {
           headers: {
             Authorization: `Bearer ${await getToken()}`,
@@ -183,82 +186,7 @@ export function CodePreviewModal({ projectId, projectName, onClose }: CodePrevie
     });
   }
 
-  function syntaxHighlight(code: string, language: string): JSX.Element {
-    if (!code) return <></>;
-
-    const lines = code.split('\n');
-
-    return (
-      <>
-        {lines.map((line, index) => {
-          const lineNumber = index + 1;
-          const highlightedLine = highlightLine(line, language);
-          
-          return (
-            <div key={index} className="flex hover:bg-gray-800/50">
-              {showLineNumbers && (
-                <span className="select-none pr-4 text-right text-gray-500" style={{ minWidth: '3rem' }}>
-                  {lineNumber}
-                </span>
-              )}
-              <span className="flex-1">{highlightedLine}</span>
-            </div>
-          );
-        })}
-      </>
-    );
-  }
-
-  function highlightLine(line: string, language: string): JSX.Element {
-    if (!line) return <span>&nbsp;</span>;
-
-    let highlighted = line;
-    
-    if (language === 'typescript' || language === 'javascript') {
-      // Comments
-      if (line.trim().startsWith('//')) {
-        return <span className="text-gray-500 italic">{line}</span>;
-      }
-      if (line.trim().startsWith('/*') || line.trim().startsWith('*')) {
-        return <span className="text-gray-500 italic">{line}</span>;
-      }
-
-      // Simple regex-based highlighting
-      // Keywords
-      const keywords = /\b(import|export|from|const|let|var|function|async|await|return|if|else|class|interface|type|enum|extends|implements|public|private|protected|static|readonly|new|this|super|try|catch|throw|typeof|instanceof|void|null|undefined|true|false|as|in|of|for|while|do|switch|case|break|continue|default)\b/g;
-      
-      // Strings
-      const strings = /(["'`])((?:\\.|[^\\])*?)\1/g;
-      
-      // Numbers
-      const numbers = /\b(\d+\.?\d*)\b/g;
-      
-      // Functions/Methods
-      const functions = /\b(\w+)(?=\()/g;
-      
-      // Apply highlighting (simplified approach)
-      highlighted = line
-        .replace(keywords, '<span class="text-purple-400">$1</span>')
-        .replace(strings, '<span class="text-green-400">$1$2$1</span>')
-        .replace(numbers, '<span class="text-yellow-400">$1</span>')
-        .replace(functions, '<span class="text-blue-400">$1</span>');
-      
-      return <span dangerouslySetInnerHTML={{ __html: highlighted }} />;
-    }
-    
-    if (language === 'json') {
-      // JSON highlighting
-      highlighted = line
-        .replace(/"([^"]+)":/g, '<span class="text-blue-400">"$1"</span>:')
-        .replace(/:\s*"([^"]*)"/g, ': <span class="text-green-400">"$1"</span>')
-        .replace(/:\s*(\d+\.?\d*)/g, ': <span class="text-yellow-400">$1</span>')
-        .replace(/:\s*(true|false|null)/g, ': <span class="text-purple-400">$1</span>');
-      
-      return <span dangerouslySetInnerHTML={{ __html: highlighted }} />;
-    }
-
-    return <span>{line}</span>;
-  }
+  // No need for custom syntax highlighting - using react-syntax-highlighter
 
   function buildFileTree(files: GeneratedFile[]): FileTreeNode[] {
     const root: FileTreeNode = {
@@ -424,6 +352,17 @@ export function CodePreviewModal({ projectId, projectName, onClose }: CodePrevie
                     <span className="text-sm text-purple-600 font-semibold">{testFileCount} tests</span>
                   </div>
                 )}
+                <div className="flex items-center space-x-2 pl-2 border-l border-gray-300">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeFrontend}
+                      onChange={(e) => setIncludeFrontend(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500 focus:ring-2"
+                    />
+                    <span className="text-sm text-gray-700 font-medium">Include Frontend</span>
+                  </label>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -547,9 +486,25 @@ export function CodePreviewModal({ projectId, projectName, onClose }: CodePrevie
                 
                 {/* Code content with syntax highlighting */}
                 <div className="flex-1 overflow-auto">
-                  <pre className="p-6 font-mono text-sm leading-relaxed text-gray-100">
-                    {syntaxHighlight(selectedFile.content, getLanguage(selectedFile.path))}
-                  </pre>
+                  <SyntaxHighlighter
+                    language={getLanguage(selectedFile.path)}
+                    style={vscDarkPlus}
+                    showLineNumbers={showLineNumbers}
+                    customStyle={{
+                      margin: 0,
+                      padding: '1.5rem',
+                      background: 'transparent',
+                      fontSize: '0.875rem',
+                    }}
+                    lineNumberStyle={{
+                      minWidth: '3rem',
+                      paddingRight: '1rem',
+                      color: '#6b7280',
+                      userSelect: 'none',
+                    }}
+                  >
+                    {selectedFile.content}
+                  </SyntaxHighlighter>
                 </div>
               </>
             ) : (

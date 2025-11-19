@@ -21,16 +21,10 @@ export class {{pascalCase name}}Service {
   /**
    * Find {{name}} by ID
    */
-  async findById(id: string) {
+  async findById(id: string, include?: any) {
     return await prisma.{{camelCase name}}.findUnique({
       where: { id },
-{{#if relationships}}
-      include: {
-{{#each relationships}}
-        {{camelCase name}}: true,
-{{/each}}
-      },
-{{/if}}
+      ...(include && { include }),
     });
   }
 
@@ -42,16 +36,12 @@ export class {{pascalCase name}}Service {
     take?: number;
     orderBy?: any;
     where?: any;
+    include?: any;
   }) {
+    const { include, ...prismaOptions } = options || {};
     return await prisma.{{camelCase name}}.findMany({
-      ...options,
-{{#if relationships}}
-      include: {
-{{#each relationships}}
-        {{camelCase name}}: true,
-{{/each}}
-      },
-{{/if}}
+      ...prismaOptions,
+      ...(include && { include }),
     });
   }
 

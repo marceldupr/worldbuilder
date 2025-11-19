@@ -58,9 +58,33 @@ router.get('/', async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
+    const include = req.query.include !== 'false'; // Default to true
+
+    // Build include object for relationships
+    const includeObj = include ? {
+      {{#each ../elements}}
+      {{#if (eq name ../linkedElement)}}
+      {{#each schema.relationships}}
+      {{#if (eq type "belongsTo")}}
+      {{camelCase fieldName}}: true,
+      {{else if (eq type "hasOne")}}
+      {{camelCase fieldName}}: true,
+      {{else if (eq type "hasMany")}}
+      {{camelCase fieldName}}: {
+        take: 10, // Limit related records
+      },
+      {{else if (eq type "manyToMany")}}
+      {{camelCase fieldName}}: {
+        take: 10,
+      },
+      {{/if}}
+      {{/each}}
+      {{/if}}
+      {{/each}}
+    } : undefined;
 
     const [items, total] = await Promise.all([
-      service.findAll({ skip, take: limit }),
+      service.findAll({ skip, take: limit, include: includeObj }),
       service.count(),
     ]);
 
@@ -98,7 +122,32 @@ router.get('/', async (req: Request, res: Response) => {
  */
 router.get('/:id', async (req: Request, res: Response) => {
   try {
-    const result = await service.findById(req.params.id);
+    const include = req.query.include !== 'false'; // Default to true
+
+    // Build include object for relationships
+    const includeObj = include ? {
+      {{#each ../elements}}
+      {{#if (eq name ../linkedElement)}}
+      {{#each schema.relationships}}
+      {{#if (eq type "belongsTo")}}
+      {{camelCase fieldName}}: true,
+      {{else if (eq type "hasOne")}}
+      {{camelCase fieldName}}: true,
+      {{else if (eq type "hasMany")}}
+      {{camelCase fieldName}}: {
+        take: 10,
+      },
+      {{else if (eq type "manyToMany")}}
+      {{camelCase fieldName}}: {
+        take: 10,
+      },
+      {{/if}}
+      {{/each}}
+      {{/if}}
+      {{/each}}
+    } : undefined;
+
+    const result = await service.findById(req.params.id, includeObj);
     if (!result) {
       return res.status(404).json({ error: '{{linkedElement}} not found' });
     }

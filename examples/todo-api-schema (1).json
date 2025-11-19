@@ -1,0 +1,1200 @@
+{
+  "project": {
+    "id": "7b093c5b-4076-46a4-8081-45981d1dc378",
+    "name": "Todo API",
+    "description": "",
+    "exportedAt": "2025-11-19T15:26:27.824Z"
+  },
+  "components": [
+    {
+      "id": "c418e7ff-1cfc-4418-8455-e0824a196c6a",
+      "type": "element",
+      "name": "Tag",
+      "description": "Element for Task",
+      "schema": {
+        "properties": [
+          {
+            "name": "id",
+            "type": "uuid",
+            "required": true,
+            "validations": [
+              "unique"
+            ]
+          },
+          {
+            "name": "name",
+            "type": "string",
+            "required": true,
+            "validations": [
+              "minLength:1",
+              "maxLength:50"
+            ]
+          },
+          {
+            "name": "color",
+            "type": "string",
+            "required": false,
+            "validations": []
+          }
+        ],
+        "relationships": [
+          {
+            "to": "Task",
+            "from": "Tag",
+            "type": "hasMany",
+            "required": false,
+            "fieldName": "tasks"
+          }
+        ]
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "696b8546-4c18-4bfd-9c31-f4176e5f41dd",
+      "type": "workflow",
+      "name": "TaskUpdateWorkflow",
+      "description": "Workflow for Task",
+      "schema": {
+        "steps": [
+          {
+            "name": "RetrieveTask",
+            "action": "getTaskDetails",
+            "onError": "retry",
+            "timeout": 30,
+            "component": "Task",
+            "description": "Fetch the task details that need to be updated."
+          },
+          {
+            "name": "UpdateTask",
+            "action": "updateTask",
+            "onError": "abort",
+            "timeout": 60,
+            "component": "Task",
+            "description": "Update the task with new information."
+          },
+          {
+            "name": "NotifyUser",
+            "action": "sendNotification",
+            "onError": "skip",
+            "component": "Task",
+            "description": "Notify the user about the task update status."
+          }
+        ],
+        "trigger": "http",
+        "rollback": {
+          "steps": [
+            {
+              "name": "RevertTask",
+              "action": "revertTask",
+              "component": "Task",
+              "description": "Revert the task back to its previous state."
+            }
+          ],
+          "enabled": true
+        },
+        "errorHandling": {
+          "notFound": "Notify user that the task was not found.",
+          "updateFailed": "Log the error and notify support team.",
+          "validationError": "Return validation errors to the user."
+        }
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "59be286a-90ca-4a12-8f3c-6bf9ed961936",
+      "type": "element",
+      "name": "Category",
+      "description": "Element for Task",
+      "schema": {
+        "properties": [
+          {
+            "name": "name",
+            "type": "string",
+            "required": true,
+            "validations": [
+              "maxLength: 100"
+            ]
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "required": false,
+            "validations": [
+              "maxLength: 255"
+            ]
+          },
+          {
+            "name": "created_at",
+            "type": "datetime",
+            "required": true,
+            "validations": [
+              "default: now"
+            ]
+          },
+          {
+            "name": "updated_at",
+            "type": "datetime",
+            "required": true,
+            "validations": [
+              "default: now"
+            ]
+          }
+        ]
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "8a238b3b-6a7f-4ea2-a498-c45d9f53668c",
+      "type": "auditor",
+      "name": "TaskAuditor",
+      "description": "Auditor for Task",
+      "schema": {
+        "TaskAuditor": {
+          "retention": "1 year",
+          "auditEvents": [
+            "created",
+            "updated"
+          ],
+          "linkedElement": "Task"
+        }
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "079937d4-9a82-4fb7-af0e-dcb7a5d7ae29",
+      "type": "element",
+      "name": "User",
+      "description": "Element for Task",
+      "schema": {
+        "properties": [
+          {
+            "name": "username",
+            "type": "string",
+            "required": true,
+            "validations": [
+              "minLength: 3",
+              "maxLength: 20",
+              "unique"
+            ]
+          },
+          {
+            "name": "email",
+            "type": "string",
+            "required": true,
+            "validations": [
+              "pattern: /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/",
+              "unique"
+            ]
+          },
+          {
+            "name": "password",
+            "type": "string",
+            "required": true,
+            "validations": [
+              "minLength: 6"
+            ]
+          },
+          {
+            "name": "createdAt",
+            "type": "datetime",
+            "required": true,
+            "validations": [
+              "default: current_datetime"
+            ]
+          }
+        ]
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "c1752d66-db99-46ad-bd96-33a2b3568cd5",
+      "type": "enforcer",
+      "name": "TaskValidationEnforcer",
+      "description": "Enforcer for Task",
+      "schema": {
+        "rules": [
+          {
+            "name": "Task Title Required",
+            "type": "validation",
+            "trigger": "before_create",
+            "condition": "task.title !== undefined && task.title.trim() !== ''",
+            "components": [
+              "Task"
+            ],
+            "description": "Ensures that a task cannot be created without a title.",
+            "errorMessage": "Task title is required."
+          },
+          {
+            "name": "Task Due Date Valid",
+            "type": "validation",
+            "trigger": "before_create",
+            "condition": "task.dueDate === undefined || task.dueDate > new Date()",
+            "components": [
+              "Task"
+            ],
+            "description": "Validates that a task's due date is set to a future date.",
+            "errorMessage": "Task due date must be in the future."
+          },
+          {
+            "name": "Task Assignment Permission",
+            "type": "permission",
+            "trigger": "before_update",
+            "condition": "user.role === 'admin' || task.assigneeId === user.id",
+            "components": [
+              "Task",
+              "User"
+            ],
+            "description": "Checks if the user has permission to assign or change the assignee of a task.",
+            "errorMessage": "You do not have permission to assign this task."
+          }
+        ]
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "ed2e20a5-c648-42bf-bc6b-cf02dd7f8dff",
+      "type": "worker",
+      "name": "CleanupWorker",
+      "description": "Worker for Task",
+      "schema": {
+        "worker": {
+          "queue": "cleanup_tasks",
+          "retry": {
+            "backoff": "exponential",
+            "attempts": 3
+          },
+          "steps": [
+            {
+              "name": "validate_task",
+              "type": "async"
+            },
+            {
+              "name": "process_cleanup",
+              "type": "async"
+            },
+            {
+              "name": "finalize_cleanup",
+              "type": "async"
+            }
+          ],
+          "helpers": [
+            "task_validator",
+            "cleanup_processor",
+            "notification_sender"
+          ],
+          "timeout": 30000,
+          "concurrency": 5
+        }
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "a4fdf9be-4766-4260-b4c9-61447d748140",
+      "type": "helper",
+      "name": "EmailHelper",
+      "description": "Helper for Task",
+      "schema": {
+        "config": {
+          "port": 587,
+          "apiKey": "your-api-key-here",
+          "password": "your-password",
+          "username": "your-username",
+          "smtpServer": "smtp.example.com"
+        },
+        "methods": [
+          {
+            "name": "sendEmail",
+            "parameters": [
+              {
+                "name": "recipient",
+                "type": "string",
+                "description": "The email address of the recipient."
+              },
+              {
+                "name": "subject",
+                "type": "string",
+                "description": "The subject line of the email."
+              },
+              {
+                "name": "message",
+                "type": "string",
+                "description": "The body content of the email."
+              }
+            ],
+            "description": "Sends an email to the specified recipient with the provided subject and message."
+          },
+          {
+            "name": "validateEmail",
+            "parameters": [
+              {
+                "name": "email",
+                "type": "string",
+                "description": "The email address to validate."
+              }
+            ],
+            "description": "Validates if the provided email address is in the correct format."
+          }
+        ],
+        "integration": "email"
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "99b7df70-e310-4066-9ab3-666c84d28e2e",
+      "type": "element",
+      "name": "Task",
+      "description": "A task for a todo list with all relevant fields",
+      "schema": {
+        "testData": {
+          "edgeCases": [
+            {
+              "tags": [
+                "long-term"
+              ],
+              "title": "Task with future due date",
+              "dueDate": "2024-12-31T23:59:59Z",
+              "category": "Planning",
+              "priority": "normal",
+              "assignedTo": "user101",
+              "description": "This task is due in the far future.",
+              "isCompleted": false
+            },
+            {
+              "tags": [],
+              "title": "Task with empty assigned user",
+              "dueDate": null,
+              "category": "Miscellaneous",
+              "priority": "normal",
+              "assignedTo": null,
+              "description": "This task does not have anyone assigned to it.",
+              "isCompleted": false
+            }
+          ],
+          "validData": [
+            {
+              "tags": [
+                "report",
+                "urgent"
+              ],
+              "title": "Complete the project report",
+              "dueDate": "2023-10-06T12:00:00Z",
+              "category": "Work",
+              "priority": "high",
+              "assignedTo": "user123",
+              "description": "Finalize and submit the project report by the end of the week.",
+              "isCompleted": false
+            },
+            {
+              "tags": [
+                "shopping",
+                "errands"
+              ],
+              "title": "Grocery shopping",
+              "dueDate": "2023-10-02T17:30:00Z",
+              "category": "Personal",
+              "priority": "normal",
+              "assignedTo": "user456",
+              "description": "Buy groceries for the week including fruits, vegetables, and snacks.",
+              "isCompleted": false
+            },
+            {
+              "tags": [
+                "health",
+                "dental"
+              ],
+              "title": "Call the dentist",
+              "dueDate": null,
+              "category": null,
+              "priority": "low",
+              "assignedTo": "user789",
+              "description": "Schedule an appointment for a dental check-up.",
+              "isCompleted": true
+            }
+          ],
+          "invalidData": [
+            {
+              "tags": [],
+              "title": "",
+              "dueDate": "2023-10-06T12:00:00Z",
+              "category": "Work",
+              "priority": "high",
+              "assignedTo": "user123",
+              "description": "This task has no title.",
+              "isCompleted": false
+            },
+            {
+              "tags": null,
+              "title": "Update website",
+              "dueDate": "2023-10-10T09:00:00Z",
+              "category": "Work",
+              "priority": "normal",
+              "assignedTo": "user456",
+              "description": "Make necessary updates to the company website.",
+              "isCompleted": true
+            },
+            {
+              "tags": [
+                "meetings"
+              ],
+              "title": "Prepare for meeting",
+              "dueDate": "2023-10-03T14:00:00Z",
+              "category": "Work",
+              "priority": "high",
+              "assignedTo": "user789",
+              "description": "Gather all necessary documents and prepare notes for the upcoming meeting.",
+              "isCompleted": "yes"
+            }
+          ]
+        }
+      },
+      "status": "ready",
+      "locked": true
+    },
+    {
+      "id": "2ba7ba4d-2e4a-4ef9-9e50-3ffbdee0ca14",
+      "type": "enforcer",
+      "name": "Do not include completed tasks in GET",
+      "description": "Hide completed tasks from API GET",
+      "schema": {
+        "rules": [
+          {
+            "name": "Do not include completed tasks in GET",
+            "type": "constraint",
+            "trigger": "before_read",
+            "condition": "task.status !== 'completed'",
+            "components": [
+              "TaskAPI",
+              "TaskService"
+            ],
+            "description": "This rule enforces that completed tasks are hidden from API GET requests.",
+            "errorMessage": "Completed tasks cannot be retrieved."
+          }
+        ]
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "1a3c284f-94c9-4a62-a78e-8d78852bfaed",
+      "type": "auth",
+      "name": "Authentication",
+      "description": "Authentication with supabase and 2 features",
+      "schema": {
+        "rbac": {
+          "roles": [
+            "admin",
+            "user"
+          ],
+          "enabled": true,
+          "hierarchy": {
+            "user": 2,
+            "admin": 4,
+            "guest": 1,
+            "manager": 3
+          },
+          "defaultRole": "user"
+        },
+        "features": [
+          "email_password",
+          "password_reset"
+        ],
+        "provider": "supabase",
+        "endpoints": {
+          "login": "/auth/login",
+          "logout": "/auth/logout",
+          "signup": "/auth/signup",
+          "refresh": "/auth/refresh",
+          "resetConfirm": "/auth/reset-confirm",
+          "resetRequest": "/auth/reset-request"
+        }
+      },
+      "status": "ready",
+      "locked": false
+    },
+    {
+      "id": "da02df15-15bb-4217-b004-a6999ab65cf4",
+      "type": "manipulator",
+      "name": "Category API",
+      "description": "REST API for Category",
+      "schema": {
+        "testData": {
+          "edgeCases": [
+            {
+              "name": "Seasonal Sale",
+              "createdAt": "2023-12-31T23:59:59Z",
+              "createdBy": "admin_user",
+              "description": "Categories for seasonal sales, can include various items."
+            },
+            {
+              "name": "Food & Beverages",
+              "createdAt": "2023-10-01T00:00:00Z",
+              "createdBy": "admin_user",
+              "description": "All food items including groceries and beverages."
+            }
+          ],
+          "validData": [
+            {
+              "name": "Electronics",
+              "createdAt": "2023-10-01T12:00:00Z",
+              "createdBy": "admin_user",
+              "description": "Devices and gadgets including phones, laptops, and accessories."
+            },
+            {
+              "name": "Home Appliances",
+              "createdAt": "2023-10-02T15:30:00Z",
+              "createdBy": "admin_user",
+              "description": "Appliances for home use such as refrigerators, microwaves, and washing machines."
+            },
+            {
+              "name": "Fashion",
+              "createdAt": "2023-10-03T08:45:00Z",
+              "createdBy": "admin_user",
+              "description": "Clothing, footwear, and accessories for men, women, and children."
+            }
+          ],
+          "invalidData": [
+            {
+              "name": "",
+              "createdAt": "2023-10-01T12:00:00Z",
+              "createdBy": "admin_user",
+              "description": "An empty category name."
+            },
+            {
+              "name": "Books",
+              "createdAt": "2023-10-02T15:30:00Z",
+              "createdBy": "admin_user",
+              "description": null
+            },
+            {
+              "name": "Toys",
+              "createdAt": "2023-10-03T08:45:00Z",
+              "createdBy": null,
+              "description": "Fun and educational toys for children."
+            }
+          ]
+        }
+      },
+      "status": "ready",
+      "locked": true
+    },
+    {
+      "id": "346d54d1-f053-4545-85fc-5497146ac81b",
+      "type": "manipulator",
+      "name": "Tag API",
+      "description": "REST API for Tag",
+      "schema": {
+        "testData": {
+          "edgeCases": [
+            {
+              "id": "edge-case-1",
+              "name": "A very long tag name that exceeds the usual character limits imposed by the API to check the handling",
+              "created_at": "2023-09-01T12:00:00Z",
+              "updated_at": "2023-09-01T12:00:00Z",
+              "description": "This description is also intentionally made very long to test the API limits regarding text input."
+            },
+            {
+              "id": "edge-case-2",
+              "name": "Null Tag",
+              "created_at": "2023-09-01T12:00:00Z",
+              "updated_at": "2023-09-01T12:00:00Z",
+              "description": null
+            }
+          ],
+          "validData": [
+            {
+              "id": "d4f8e8ed-7d85-4c7d-9e4b-d8c6779f354c",
+              "name": "Technology",
+              "created_at": "2023-08-01T12:00:00Z",
+              "updated_at": "2023-09-01T12:00:00Z",
+              "description": "Tags related to technology advancements and innovations."
+            },
+            {
+              "id": "f5c6b6a3-4c03-4a8b-bd78-7a8d2c2c3a3b",
+              "name": "Health",
+              "created_at": "2023-07-20T09:30:00Z",
+              "updated_at": "2023-09-05T14:20:00Z",
+              "description": "Topics covering health, wellness, and fitness."
+            },
+            {
+              "id": "b2c981e8-1695-4bd0-bf6c-ebf59cc95241",
+              "name": "Travel",
+              "created_at": "2023-06-15T08:00:00Z",
+              "updated_at": "2023-09-10T10:15:00Z",
+              "description": "Discover places, tips, and guides for traveling."
+            }
+          ],
+          "invalidData": [
+            {
+              "id": "invalid-id-1",
+              "name": "",
+              "created_at": "2023-09-01T12:00:00Z",
+              "updated_at": "2023-09-02T12:00:00Z",
+              "description": "No name provided for the tag."
+            },
+            {
+              "id": "invalid-id-2",
+              "name": "Food",
+              "created_at": "invalid-date",
+              "updated_at": "2023-09-02T12:00:00Z",
+              "description": "Tags related to food and recipes."
+            },
+            {
+              "id": "invalid-id-3",
+              "created_at": "2023-09-02T12:00:00Z",
+              "updated_at": "2023-09-02T12:00:00Z",
+              "description": "Missing name field."
+            }
+          ]
+        }
+      },
+      "status": "ready",
+      "locked": true
+    },
+    {
+      "id": "d8ace61d-e13f-4642-bdc7-c9b43d295167",
+      "type": "manipulator",
+      "name": "Task API",
+      "description": "REST API for Task",
+      "schema": {
+        "testData": {
+          "edgeCases": [
+            {
+              "id": "3l4m5n6o-7p8q-9r0s-1t2u-3v4w5x6y7z8a",
+              "title": "Edge case with past due date",
+              "status": "Overdue",
+              "dueDate": "2023-08-01T00:00:00Z",
+              "priority": "Critical",
+              "createdAt": "2023-07-01T00:00:00Z",
+              "createdBy": "user_xyz",
+              "updatedAt": "2023-07-15T00:00:00Z",
+              "assignedTo": "user_010",
+              "description": "Task was supposed to be completed last month."
+            },
+            {
+              "id": "4b5c6d7e-8f9g-0h1i-2j3k-4l5m6n7o8p9q",
+              "title": "Task with no assigned user",
+              "status": "Pending",
+              "dueDate": "2023-12-31T00:00:00Z",
+              "priority": "Medium",
+              "createdAt": "2023-09-30T00:00:00Z",
+              "createdBy": "user_abc",
+              "updatedAt": "2023-09-30T00:00:00Z",
+              "assignedTo": null,
+              "description": "This task is not assigned to anyone."
+            }
+          ],
+          "validData": [
+            {
+              "id": "1a2b3c4d-5e6f-7g8h-9i0j-1a2b3c4d5e6f",
+              "title": "Implement user authentication",
+              "status": "In Progress",
+              "dueDate": "2023-10-15T00:00:00Z",
+              "priority": "High",
+              "createdAt": "2023-09-01T10:00:00Z",
+              "createdBy": "user_abc",
+              "updatedAt": "2023-09-15T12:00:00Z",
+              "assignedTo": "user_123",
+              "description": "Add JWT-based authentication to the application."
+            },
+            {
+              "id": "6f7g8h9i-j0k1-l2m3-n4o5-p6q7r8s9t0u1",
+              "title": "Design database schema",
+              "status": "Completed",
+              "dueDate": "2023-09-25T00:00:00Z",
+              "priority": "Medium",
+              "createdAt": "2023-08-15T09:00:00Z",
+              "createdBy": "user_def",
+              "updatedAt": "2023-08-20T14:00:00Z",
+              "assignedTo": "user_456",
+              "description": "Create and document the database schema for user profiles."
+            },
+            {
+              "id": "2v3w4x5y-6z7a-8b9c-d0e1-f2g3h4i5j6k7",
+              "title": "Create unit tests",
+              "status": "Pending",
+              "dueDate": "2023-11-01T00:00:00Z",
+              "priority": "Low",
+              "createdAt": "2023-09-10T08:30:00Z",
+              "createdBy": "user_ghi",
+              "updatedAt": "2023-09-11T09:00:00Z",
+              "assignedTo": "user_789",
+              "description": "Write unit tests for the authentication module."
+            }
+          ],
+          "invalidData": [
+            {
+              "id": "1a2b3c4d-5e6f-7g8h-9i0j-1a2b3c4d5e6f",
+              "title": "",
+              "status": "In Progress",
+              "dueDate": "2023-10-15T00:00:00Z",
+              "priority": "High",
+              "createdAt": "2023-09-01T10:00:00Z",
+              "createdBy": "user_abc",
+              "updatedAt": "2023-09-15T12:00:00Z",
+              "assignedTo": "user_123",
+              "description": "Add JWT-based authentication to the application."
+            },
+            {
+              "id": "6f7g8h9i-j0k1-l2m3-n4o5-p6q7r8s9t0u1",
+              "title": "Design database schema",
+              "status": "Completed",
+              "dueDate": "2023-09-25T00:00:00Z",
+              "priority": "Medium",
+              "createdAt": "2023-08-15T09:00:00Z",
+              "createdBy": "user_def",
+              "updatedAt": "2023-08-20T14:00:00Z",
+              "assignedTo": "user_456",
+              "description": null
+            },
+            {
+              "id": "2v3w4x5y-6z7a-8b9c-d0e1-f2g3h4i5j6k7",
+              "title": "Create unit tests",
+              "status": "Unknown",
+              "dueDate": "2023-11-01T00:00:00Z",
+              "priority": "Low",
+              "createdAt": "2023-09-10T08:30:00Z",
+              "createdBy": "user_ghi",
+              "updatedAt": "2023-09-11T09:00:00Z",
+              "assignedTo": "user_789",
+              "description": "Write unit tests for the authentication module."
+            }
+          ]
+        },
+        "customEndpoints": [
+          {
+            "path": "/tasks/today",
+            "method": "GET",
+            "addedAt": "2025-11-19T14:35:13.336Z",
+            "description": "Retrieves all tasks for the user that are due today, excluding completed tasks."
+          }
+        ]
+      },
+      "status": "ready",
+      "locked": true
+    }
+  ],
+  "canvas": {
+    "edges": [
+      {
+        "id": "reactflow__edge-99b7df70-e310-4066-9ab3-666c84d28e2e-59be286a-90ca-4a12-8f3c-6bf9ed961936",
+        "type": "smoothstep",
+        "label": "category",
+        "source": "99b7df70-e310-4066-9ab3-666c84d28e2e",
+        "target": "59be286a-90ca-4a12-8f3c-6bf9ed961936",
+        "animated": true,
+        "sourceHandle": null,
+        "targetHandle": null
+      },
+      {
+        "id": "reactflow__edge-c418e7ff-1cfc-4418-8455-e0824a196c6a-99b7df70-e310-4066-9ab3-666c84d28e2e",
+        "type": "smoothstep",
+        "label": "tasks",
+        "source": "c418e7ff-1cfc-4418-8455-e0824a196c6a",
+        "target": "99b7df70-e310-4066-9ab3-666c84d28e2e",
+        "animated": true,
+        "sourceHandle": null,
+        "targetHandle": null
+      },
+      {
+        "id": "reactflow__edge-99b7df70-e310-4066-9ab3-666c84d28e2e-079937d4-9a82-4fb7-af0e-dcb7a5d7ae29",
+        "type": "smoothstep",
+        "label": "users",
+        "source": "99b7df70-e310-4066-9ab3-666c84d28e2e",
+        "target": "079937d4-9a82-4fb7-af0e-dcb7a5d7ae29",
+        "animated": true,
+        "sourceHandle": null,
+        "targetHandle": null
+      }
+    ],
+    "nodes": [
+      {
+        "id": "079937d4-9a82-4fb7-af0e-dcb7a5d7ae29",
+        "data": {
+          "type": "element",
+          "label": "User",
+          "locked": false,
+          "status": "ready",
+          "groupName": "Domain",
+          "groupType": "feature",
+          "description": "Element for Task"
+        },
+        "type": "component",
+        "position": {
+          "x": -4.719397532834193,
+          "y": 207.0897325955029
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": 48.4099237478448,
+          "y": 213.1271554683073
+        }
+      },
+      {
+        "id": "59be286a-90ca-4a12-8f3c-6bf9ed961936",
+        "data": {
+          "type": "element",
+          "label": "Category",
+          "locked": false,
+          "status": "ready",
+          "groupName": "Domain",
+          "groupType": "feature",
+          "description": "Element for Task"
+        },
+        "type": "component",
+        "position": {
+          "x": -151.1625124478156,
+          "y": 323.6197355287845
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": -98.03319116713664,
+          "y": 329.6571584015891
+        }
+      },
+      {
+        "id": "c418e7ff-1cfc-4418-8455-e0824a196c6a",
+        "data": {
+          "type": "element",
+          "label": "Tag",
+          "locked": false,
+          "status": "ready",
+          "groupName": "Domain",
+          "groupType": "feature",
+          "description": "Element for Task"
+        },
+        "type": "component",
+        "position": {
+          "x": -25.41295365814176,
+          "y": 13.16562601600413
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": -25.41295365814176,
+          "y": 13.16562601600413
+        }
+      },
+      {
+        "id": "696b8546-4c18-4bfd-9c31-f4176e5f41dd",
+        "data": {
+          "type": "workflow",
+          "label": "TaskUpdateWorkflow",
+          "locked": false,
+          "status": "ready",
+          "groupName": "Business Logic",
+          "groupType": "infrastructure",
+          "description": "Workflow for Task"
+        },
+        "type": "component",
+        "position": {
+          "x": 534.1204430690908,
+          "y": 210.497004398864
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": 548.4204080449272,
+          "y": 132.6416395304214
+        }
+      },
+      {
+        "id": "8a238b3b-6a7f-4ea2-a498-c45d9f53668c",
+        "data": {
+          "type": "auditor",
+          "label": "TaskAuditor",
+          "locked": false,
+          "status": "ready",
+          "groupName": "Domain",
+          "groupType": "feature",
+          "description": "Auditor for Task"
+        },
+        "type": "component",
+        "position": {
+          "x": -378.5078580368375,
+          "y": 289.5742594278253
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": -325.3785367561586,
+          "y": 295.6116823006298
+        }
+      },
+      {
+        "id": "c1752d66-db99-46ad-bd96-33a2b3568cd5",
+        "data": {
+          "type": "enforcer",
+          "label": "TaskValidationEnforcer",
+          "locked": false,
+          "status": "ready",
+          "groupName": "Business Logic",
+          "groupType": "infrastructure",
+          "description": "Enforcer for Task"
+        },
+        "type": "component",
+        "position": {
+          "x": 307.228825885047,
+          "y": 213.2054429129187
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": 321.5287908608834,
+          "y": 135.3500780444761
+        }
+      },
+      {
+        "id": "ed2e20a5-c648-42bf-bc6b-cf02dd7f8dff",
+        "data": {
+          "type": "worker",
+          "label": "CleanupWorker",
+          "locked": false,
+          "status": "ready",
+          "groupName": "Business Logic",
+          "groupType": "infrastructure",
+          "description": "Worker for Task"
+        },
+        "type": "component",
+        "position": {
+          "x": 532.5921405337625,
+          "y": 81.26629424766281
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": 546.8921055095989,
+          "y": 3.410929379220192
+        }
+      },
+      {
+        "id": "a4fdf9be-4766-4260-b4c9-61447d748140",
+        "data": {
+          "type": "helper",
+          "label": "EmailHelper",
+          "locked": false,
+          "status": "ready",
+          "groupName": "Infra",
+          "groupType": "infrastructure",
+          "description": "Helper for Task"
+        },
+        "type": "component",
+        "position": {
+          "x": 301.6371784638001,
+          "y": 82.98091135857982
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": 315.9371434396365,
+          "y": 5.125546490137168
+        }
+      },
+      {
+        "id": "99b7df70-e310-4066-9ab3-666c84d28e2e",
+        "data": {
+          "type": "element",
+          "label": "Task",
+          "locked": true,
+          "status": "ready",
+          "groupName": "Domain",
+          "groupType": "feature",
+          "description": "A task for a todo list with all relevant fields"
+        },
+        "type": "component",
+        "position": {
+          "x": -356.8125899741539,
+          "y": 58.61969321812941
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": -303.6832686934749,
+          "y": 64.65711609093384
+        }
+      },
+      {
+        "id": "d8ace61d-e13f-4642-bdc7-c9b43d295167",
+        "data": {
+          "type": "manipulator",
+          "label": "Task API",
+          "locked": true,
+          "status": "ready",
+          "groupName": "API",
+          "groupType": "system",
+          "description": "REST API for Task"
+        },
+        "type": "component",
+        "position": {
+          "x": -97.88593138959806,
+          "y": 694.227559984188
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": -97.88593138959806,
+          "y": 694.227559984188
+        }
+      },
+      {
+        "id": "2ba7ba4d-2e4a-4ef9-9e50-3ffbdee0ca14",
+        "data": {
+          "type": "enforcer",
+          "label": "Do not include completed tasks in GET",
+          "locked": false,
+          "status": "ready",
+          "groupName": "API",
+          "groupType": "system",
+          "description": "Hide completed tasks from API GET"
+        },
+        "type": "component",
+        "position": {
+          "x": 56.77106487204696,
+          "y": 835.542799054296
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": 56.77106487204696,
+          "y": 835.542799054296
+        }
+      },
+      {
+        "id": "1a3c284f-94c9-4a62-a78e-8d78852bfaed",
+        "data": {
+          "type": "auth",
+          "label": "Authentication",
+          "locked": false,
+          "status": "ready",
+          "description": "Authentication with supabase and 2 features"
+        },
+        "type": "component",
+        "position": {
+          "x": 345.3116355008057,
+          "y": 479.5932222869346
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": 345.3116355008057,
+          "y": 479.5932222869346
+        }
+      },
+      {
+        "id": "346d54d1-f053-4545-85fc-5497146ac81b",
+        "data": {
+          "type": "manipulator",
+          "label": "Tag API",
+          "locked": true,
+          "status": "ready",
+          "groupName": "API",
+          "groupType": "system",
+          "description": "REST API for Tag"
+        },
+        "type": "component",
+        "position": {
+          "x": 137.0190245823923,
+          "y": 694.1108053518244
+        },
+        "selected": true,
+        "positionAbsolute": {
+          "x": 137.0190245823923,
+          "y": 694.1108053518244
+        }
+      },
+      {
+        "id": "da02df15-15bb-4217-b004-a6999ab65cf4",
+        "data": {
+          "type": "manipulator",
+          "label": "Category API",
+          "locked": true,
+          "status": "ready",
+          "groupName": "API",
+          "groupType": "system",
+          "description": "REST API for Category"
+        },
+        "type": "component",
+        "position": {
+          "x": 372.6429282199239,
+          "y": 689.6693235217853
+        },
+        "selected": false,
+        "positionAbsolute": {
+          "x": 372.6429282199239,
+          "y": 689.6693235217853
+        }
+      }
+    ],
+    "groups": [
+      {
+        "id": "group-1763558695190",
+        "name": "Task Feature BL",
+        "type": "infrastructure",
+        "color": "#6b7280",
+        "nodeIds": [
+          "a4fdf9be-4766-4260-b4c9-61447d748140",
+          "c1752d66-db99-46ad-bd96-33a2b3568cd5",
+          "ed2e20a5-c648-42bf-bc6b-cf02dd7f8dff",
+          "696b8546-4c18-4bfd-9c31-f4176e5f41dd"
+        ],
+        "position": {
+          "x": 260.1024167224098,
+          "y": 11.85839710895584
+        },
+        "collapsed": false,
+        "dimensions": {
+          "width": 524.4253740792242,
+          "height": 451.3236543024083
+        },
+        "description": ""
+      },
+      {
+        "id": "group-1763558754994",
+        "name": "Task Feature",
+        "type": "feature",
+        "color": "#3b82f6",
+        "nodeIds": [
+          "99b7df70-e310-4066-9ab3-666c84d28e2e",
+          "079937d4-9a82-4fb7-af0e-dcb7a5d7ae29",
+          "c418e7ff-1cfc-4418-8455-e0824a196c6a",
+          "59be286a-90ca-4a12-8f3c-6bf9ed961936",
+          "8a238b3b-6a7f-4ea2-a498-c45d9f53668c"
+        ],
+        "position": {
+          "x": -400.4350436978365,
+          "y": -66.1635412972586
+        },
+        "collapsed": false,
+        "dimensions": {
+          "width": 651.9138250848183,
+          "height": 519.8464088754359
+        },
+        "description": ""
+      },
+      {
+        "id": "group-1763559010390",
+        "name": "API",
+        "type": "system",
+        "color": "#9333ea",
+        "nodeIds": [
+          "2ba7ba4d-2e4a-4ef9-9e50-3ffbdee0ca14",
+          "346d54d1-f053-4545-85fc-5497146ac81b",
+          "da02df15-15bb-4217-b004-a6999ab65cf4",
+          "d8ace61d-e13f-4642-bdc7-c9b43d295167"
+        ],
+        "position": {
+          "x": -135.5467560614942,
+          "y": 626.8773965640929
+        },
+        "collapsed": false,
+        "dimensions": {
+          "width": 757.4292385207126,
+          "height": 341.315239070108
+        },
+        "description": ""
+      }
+    ]
+  },
+  "metadata": {
+    "totalComponents": 14,
+    "version": "1.0",
+    "generator": "Worldbuilder"
+  }
+}

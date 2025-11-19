@@ -11,6 +11,7 @@ const codeGenerator = new CodeGeneratorService();
 router.post('/generate/:projectId', async (req: AuthRequest, res): Promise<void> => {
   try {
     const { projectId } = req.params;
+    const { includeFrontend } = req.body; // Option to include frontend generation
 
     // Verify project belongs to user
     const project = await prisma.project.findFirst({
@@ -26,11 +27,12 @@ router.post('/generate/:projectId', async (req: AuthRequest, res): Promise<void>
     }
 
     // Generate code
-    const files = await codeGenerator.generateProject(projectId);
+    const files = await codeGenerator.generateProject(projectId, { includeFrontend });
 
     res.json({
       message: 'Code generated successfully',
       fileCount: files.length,
+      frontendIncluded: includeFrontend || false,
       files: files.map((f) => ({ path: f.path, size: f.content.length })),
     });
   } catch (error: any) {
@@ -43,6 +45,7 @@ router.post('/generate/:projectId', async (req: AuthRequest, res): Promise<void>
 router.get('/preview/:projectId', async (req: AuthRequest, res): Promise<void> => {
   try {
     const { projectId } = req.params;
+    const includeFrontend = req.query.includeFrontend === 'true';
 
     // Verify project belongs to user
     const project = await prisma.project.findFirst({
@@ -58,10 +61,10 @@ router.get('/preview/:projectId', async (req: AuthRequest, res): Promise<void> =
     }
 
     // Generate code
-    const files = await codeGenerator.generateProject(projectId);
+    const files = await codeGenerator.generateProject(projectId, { includeFrontend });
 
     // Return files with content for preview
-    res.json({ files });
+    res.json({ files, frontendIncluded: includeFrontend });
   } catch (error: any) {
     console.error('Error previewing code:', error);
     res.status(500).json({ error: error.message || 'Failed to preview code' });
@@ -72,6 +75,7 @@ router.get('/preview/:projectId', async (req: AuthRequest, res): Promise<void> =
 router.get('/download/:projectId', async (req: AuthRequest, res): Promise<void> => {
   try {
     const { projectId } = req.params;
+    const includeFrontend = req.query.includeFrontend === 'true';
 
     // Verify project belongs to user
     const project = await prisma.project.findFirst({
@@ -87,7 +91,7 @@ router.get('/download/:projectId', async (req: AuthRequest, res): Promise<void> 
     }
 
     // Generate code
-    const files = await codeGenerator.generateProject(projectId);
+    const files = await codeGenerator.generateProject(projectId, { includeFrontend });
 
     // Create ZIP archive
     const archive = archiver('zip', {

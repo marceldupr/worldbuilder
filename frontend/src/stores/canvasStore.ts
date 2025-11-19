@@ -36,6 +36,7 @@ interface CanvasState {
   removeNodeFromGroup: (nodeId: string, groupId: string) => void;
   
   loadCanvas: (projectId: string) => Promise<void>;
+  refreshNodeData: (projectId: string) => Promise<void>;
   saveCanvas: () => Promise<void>;
   
   reset: () => void;
@@ -216,6 +217,40 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     saveTimeout = setTimeout(() => get().saveCanvas(), 1000);
   },
 
+  refreshNodeData: async (projectId: string) => {
+    // Force refresh of all node data from components (useful after updates)
+    try {
+      const project = await projectsApi.get(projectId);
+      const components = project.components || [];
+      
+      set((state) => ({
+        nodes: state.nodes.map((node: Node) => {
+          const component = components.find((c: any) => c.id === node.id);
+          if (component) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                label: component.name,
+                type: component.type,
+                status: component.status,
+                description: component.description,
+                locked: component.locked || false,
+                linkedElement: component.schema?.linkedElement,
+                linkedElementId: component.schema?.linkedElementId, // Fallback for old data
+                hasRedis: component.schema?.hasRedis,
+              },
+            };
+          }
+          return node;
+        }),
+      }));
+      console.log('[Canvas] Node data refreshed');
+    } catch (error) {
+      console.error('Error refreshing node data:', error);
+    }
+  },
+
   loadCanvas: async (projectId: string) => {
     try {
       const project = await projectsApi.get(projectId);
@@ -248,6 +283,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
               status: (component as any).status,
               description: (component as any).description,
               locked: (component as any).locked || false, // Update locked state from DB
+              linkedElement: (component as any).schema?.linkedElement, // For frontend UI indicator
+              linkedElementId: (component as any).schema?.linkedElementId, // Fallback for old data
+              hasRedis: (component as any).schema?.hasRedis, // For worker mode indicator
             },
           };
         });
@@ -265,6 +303,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
             status: comp.status,
             description: comp.description,
             locked: comp.locked || false,
+            linkedElement: comp.schema?.linkedElement, // For frontend UI indicator
+            linkedElementId: comp.schema?.linkedElementId, // Fallback for old data
+            hasRedis: comp.schema?.hasRedis, // For worker mode indicator
           },
         }));
       

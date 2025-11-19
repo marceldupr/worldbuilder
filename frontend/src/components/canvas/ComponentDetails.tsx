@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { componentsApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
-import { Lock, Unlock, Link2, FileText, Globe as GlobeIcon, Loader2, AlertTriangle, Sparkles } from 'lucide-react';
+import { Lock, Unlock, Link2, FileText, Globe as GlobeIcon, Loader2, AlertTriangle, Sparkles, Layout, Table, Edit3, Eye, Plus } from 'lucide-react';
 
 interface ComponentDetailsProps {
   nodeId: string | null;
@@ -93,9 +93,20 @@ export function ComponentDetails({ nodeId, nodes, onRequestGenerateData }: Compo
   }
 
   const getLinkedElement = () => {
-    if (component.type === 'manipulator' && component.schema?.linkedElementId) {
-      const linkedNode = nodes.find(n => n.id === component.schema.linkedElementId);
-      return linkedNode?.data.label;
+    if (component.type === 'manipulator') {
+      // Check for explicit linkedElement in schema
+      if (component.schema?.linkedElement) {
+        return component.schema.linkedElement;
+      }
+      // Check for linkedElementId and look up the node
+      if (component.schema?.linkedElementId) {
+        const linkedNode = nodes.find(n => n.id === component.schema.linkedElementId);
+        return linkedNode?.data.label;
+      }
+      // Infer from API name pattern (e.g., "Task API" → "Task")
+      if (component.name?.includes(' API')) {
+        return component.name.replace(' API', '').trim();
+      }
     }
     return null;
   };
@@ -208,6 +219,80 @@ export function ComponentDetails({ nodeId, nodes, onRequestGenerateData }: Compo
           <div className="mt-3 p-2.5 rounded-lg bg-indigo-200/50 border border-indigo-300">
             <p className="text-xs text-indigo-800 font-medium text-center">
               This API automatically syncs with the {linkedElement} schema
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Frontend UI Generation (for APIs with linked elements) */}
+      {component.type === 'manipulator' && linkedElement && (
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 p-5 border border-emerald-200 shadow-md">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className="p-2 rounded-lg bg-emerald-500 text-white">
+                <Layout className="w-4 h-4" />
+              </div>
+              <h4 className="text-sm font-bold text-emerald-900">
+                Frontend UI Generated
+              </h4>
+            </div>
+            <span className="rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-bold text-white shadow-md">
+              Auto
+            </span>
+          </div>
+          
+          <div className="mb-3 p-3 rounded-lg bg-white border border-emerald-100">
+            <p className="text-xs text-gray-600 mb-2">
+              When you check <strong>"Include Frontend"</strong>, a complete admin panel will be generated:
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="rounded-lg bg-white p-2.5 border border-emerald-100 flex items-center space-x-2">
+              <div className="p-1.5 rounded bg-emerald-100 text-emerald-600">
+                <Table className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs font-bold text-gray-900">{linkedElement} List Page</div>
+                <div className="text-xs text-gray-500">Table with search, pagination, filtering</div>
+              </div>
+            </div>
+            
+            <div className="rounded-lg bg-white p-2.5 border border-emerald-100 flex items-center space-x-2">
+              <div className="p-1.5 rounded bg-emerald-100 text-emerald-600">
+                <Eye className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs font-bold text-gray-900">{linkedElement} Detail Page</div>
+                <div className="text-xs text-gray-500">View full record with all fields</div>
+              </div>
+            </div>
+            
+            <div className="rounded-lg bg-white p-2.5 border border-emerald-100 flex items-center space-x-2">
+              <div className="p-1.5 rounded bg-emerald-100 text-emerald-600">
+                <Plus className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs font-bold text-gray-900">{linkedElement} Create Page</div>
+                <div className="text-xs text-gray-500">Form with validation for new records</div>
+              </div>
+            </div>
+            
+            <div className="rounded-lg bg-white p-2.5 border border-emerald-100 flex items-center space-x-2">
+              <div className="p-1.5 rounded bg-emerald-100 text-emerald-600">
+                <Edit3 className="w-3.5 h-3.5" />
+              </div>
+              <div className="flex-1">
+                <div className="text-xs font-bold text-gray-900">{linkedElement} Edit Page</div>
+                <div className="text-xs text-gray-500">Update existing records</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-3 p-2.5 rounded-lg bg-emerald-200/50 border border-emerald-300 flex items-center space-x-2">
+            <Sparkles className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+            <p className="text-xs text-emerald-900 font-semibold">
+              Material-UI components with React Query & TypeScript
             </p>
           </div>
         </div>

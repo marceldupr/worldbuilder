@@ -57,7 +57,8 @@ function CanvasContent() {
     groups,
     setNodes: setComponentNodes, 
     setEdges, 
-    loadCanvas, 
+    loadCanvas,
+    refreshNodeData,
     addNode,
     addGroup,
     removeGroup,
@@ -109,8 +110,10 @@ function CanvasContent() {
     if (projectId) {
       loadCanvas(projectId);
       loadProjectName();
+      // Refresh node data to ensure linkedElement is populated
+      setTimeout(() => refreshNodeData(projectId), 500);
     }
-  }, [projectId, loadCanvas]);
+  }, [projectId, loadCanvas, refreshNodeData]);
 
   async function loadProjectName() {
     try {
@@ -302,6 +305,9 @@ function CanvasContent() {
         locked: component.locked || false,
         groupName: group?.name,
         groupType: group?.type,
+        linkedElement: component.schema?.linkedElement, // For frontend UI indicator
+        linkedElementId: component.schema?.linkedElementId, // Fallback for old data
+        hasRedis: component.schema?.hasRedis, // For worker mode indicator
       },
     };
     addNode(newNode);
@@ -364,6 +370,9 @@ function CanvasContent() {
               locked: component.locked,
               groupName: group?.name,
               groupType: group?.type,
+              linkedElement: component.schema?.linkedElement, // For frontend UI indicator
+              linkedElementId: component.schema?.linkedElementId, // Fallback for old data
+              hasRedis: component.schema?.hasRedis, // For worker mode indicator
             },
           };
         }

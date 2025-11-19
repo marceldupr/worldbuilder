@@ -1,5 +1,3 @@
-import { Worker, Job } from 'bullmq';
-import Redis from 'ioredis';
 {{#each helpers}}
 import { {{pascalCase name}}Helper } from '../helpers/{{kebabCase name}}.helper.js';
 {{/each}}
@@ -7,20 +5,51 @@ import { {{pascalCase name}}Helper } from '../helpers/{{kebabCase name}}.helper.
 /**
  * {{name}} Worker
  * {{description}}
+ * 
+ * Supports two modes:
+ * 1. Queue Mode (with Redis) - for production with BullMQ
+ * 2. Direct Mode (no Redis) - for development or simple deployments
  */
 
-const connection = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  maxRetriesPerRequest: null,
-});
+// Check if Redis is available
+const USE_QUEUE = process.env.USE_QUEUE === 'true' && 
+                  process.env.REDIS_HOST && 
+                  process.env.REDIS_PORT;
+
+// Lazy import for optional dependencies
+let Worker: any, Job: any, Queue: any, Redis: any;
+let connection: any;
+let worker: any;
+
+if (USE_QUEUE) {
+  try {
+    const bullmq = await import('bullmq');
+    Worker = bullmq.Worker;
+    Job = bullmq.Job;
+    Queue = bullmq.Queue;
+    
+    const ioredis = await import('ioredis');
+    Redis = ioredis.default;
+    
+    connection = new Redis({
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      maxRetriesPerRequest: null,
+    });
+    
+    console.log(`✓ Redis connected - Queue mode enabled for {{name}}`);
+  } catch (error) {
+    console.warn('⚠️ Redis not available - falling back to direct mode');
+    USE_QUEUE = false;
+  }
+}
 
 {{#each helpers}}
 const {{camelCase name}}Helper = new {{pascalCase name}}Helper();
 {{/each}}
 
 // Job data interface
-interface {{pascalCase name}}JobData {
+export interface {{pascalCase name}}JobData {
   [key: string]: any;
 }
 
@@ -83,30 +112,61 @@ async function processJob(job: Job<{{pascalCase name}}JobData>): Promise<any> {
   }
 }
 
-// Create worker
-const worker = new Worker('{{queue}}', processJob, {
-  connection,
-  concurrency: {{concurrency}},
-  limiter: {
-    max: {{concurrency}},
-    duration: 1000,
-  },
-});
+/**
+ * Execute job directly (without queue)
+ * Used when Redis is not available
+ */
+export async function executeDirect(data: {{pascalCase name}}JobData): Promise<any> {
+  console.log(`[Direct] Executing {{name}} job`);
+  
+  const mockJob = {
+    id: `direct-${Date.now()}`,
+    data,
+    updateProgress: async (progress: number) => {
+      console.log(`[Direct] Progress: ${progress}%`);
+    },
+  };
+  
+  return await processJob(mockJob as any);
+}
 
-// Event handlers
-worker.on('completed', (job) => {
-  console.log(`✓ Job ${job.id} completed`);
-});
+// Initialize based on mode
+if (USE_QUEUE) {
+  // Create BullMQ worker
+  worker = new Worker('{{queue}}', processJob, {
+    connection,
+    concurrency: {{concurrency}},
+    limiter: {
+      max: {{concurrency}},
+      duration: 1000,
+    },
+  });
 
-worker.on('failed', (job, err) => {
-  console.error(`✗ Job ${job?.id} failed:`, err);
-});
+  // Event handlers
+  worker.on('completed', (job: any) => {
+    console.log(`✓ Job ${job.id} completed`);
+  });
 
-worker.on('error', (err) => {
-  console.error('Worker error:', err);
-});
+  worker.on('failed', (job: any, err: Error) => {
+    console.error(`✗ Job ${job?.id} failed:`, err);
+  });
 
-console.log(`🚀 {{name}} worker started (queue: {{queue}}, concurrency: {{concurrency}})`);
+  worker.on('error', (err: Error) => {
+    console.error('Worker error:', err);
+  });
 
-export default worker;
+  console.log(`🚀 {{name}} worker started (queue: {{queue}}, concurrency: {{concurrency}})`);
+  
+  export default worker;
+} else {
+  // Direct mode - export the executor function
+  console.log(`🚀 {{name}} worker started (direct mode - no queue)`);
+  
+  // Export a mock worker interface for compatibility
+  export default {
+    name: '{{name}}',
+    mode: 'direct',
+    execute: executeDirect,
+  };
+}
 

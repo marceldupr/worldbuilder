@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { 
   Database, Globe, Settings, Wrench, Lock, ClipboardCheck, 
-  CheckCircle, Workflow as WorkflowIcon, LucideIcon, Package
+  CheckCircle, Workflow as WorkflowIcon, LucideIcon, Package, Layout
 } from 'lucide-react';
 
 interface ComponentNodeData {
@@ -14,6 +14,9 @@ interface ComponentNodeData {
   groupName?: string;
   groupType?: 'system' | 'feature' | 'infrastructure';
   isSystemWide?: boolean;
+  linkedElement?: string; // For manipulators - element name
+  linkedElementId?: string; // For manipulators - element UUID (from existing data)
+  hasRedis?: boolean; // For workers - indicates queue mode vs direct mode
 }
 
 const nodeStyles: Record<string, {
@@ -93,6 +96,16 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
   
   // Determine if this is a system-wide component
   const isSystemComponent = data.type === 'auth' || data.groupType === 'system' || data.isSystemWide;
+  
+  // Check if this API will generate frontend UI
+  // Works with: explicit linkedElement/linkedElementId OR inferred from name pattern (e.g., "Task API" → "Task")
+  const inferredElement = data.type === 'manipulator' && data.label?.includes(' API') 
+    ? data.label.replace(' API', '').trim() 
+    : null;
+  const generatesFrontend = data.type === 'manipulator' && (data.linkedElement || data.linkedElementId || inferredElement);
+  
+  // Check if this worker uses Redis queue (future enhancement)
+  const usesQueue = data.type === 'worker' && data.hasRedis;
 
   return (
     <div
@@ -100,17 +113,28 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
         selected ? 'ring-2 ring-blue-500 ring-offset-2' : ''
       } ${isSystemComponent ? 'ring-2 ring-purple-400 ring-opacity-50' : ''} min-w-[200px] shadow-md transition-all hover:shadow-lg relative`}
     >
+      {/* Frontend UI indicator (top-right for APIs) */}
+      {generatesFrontend && (
+        <div 
+          className="absolute -top-3 -right-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs px-3 py-1 rounded-full shadow-xl font-bold flex items-center space-x-1.5 z-10 ring-2 ring-white"
+          title="Frontend UI will be generated for this API"
+        >
+          <Layout className="w-4 h-4" />
+          <span>UI</span>
+        </div>
+      )}
+
       {/* System-wide indicator */}
       {isSystemComponent && (
-        <div className="absolute -top-2 -right-2 bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full shadow-md font-medium flex items-center space-x-1">
+        <div className="absolute -top-3 -left-3 bg-purple-500 text-white text-xs px-2.5 py-1 rounded-full shadow-lg font-semibold flex items-center space-x-1 z-10 ring-2 ring-white">
           <Globe className="w-3 h-3" />
           <span>System</span>
         </div>
       )}
 
-      {/* Group indicator */}
+      {/* Group indicator (bottom-left) */}
       {data.groupName && (
-        <div className={`absolute -top-2 -left-2 text-xs px-2 py-0.5 rounded-full shadow-md font-medium flex items-center space-x-1 ${
+        <div className={`absolute -bottom-2 -left-2 text-xs px-2 py-0.5 rounded-full shadow-md font-medium flex items-center space-x-1 ${
           data.groupType === 'system' ? 'bg-purple-500 text-white' :
           data.groupType === 'infrastructure' ? 'bg-gray-500 text-white' :
           'bg-blue-500 text-white'
@@ -152,6 +176,28 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
             }
           </p>
         )}
+
+        {/* Inline indicators */}
+        <div className="mt-2 flex items-center gap-1.5">
+          {generatesFrontend && (
+            <div className="flex items-center space-x-1 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+              <Layout className="w-3 h-3" />
+              <span>Admin UI</span>
+            </div>
+          )}
+          {data.type === 'worker' && (
+            <div className="flex items-center space-x-1 bg-purple-100 text-purple-700 px-2 py-0.5 rounded-md text-xs font-semibold">
+              <Settings className="w-3 h-3" />
+              <span>{usesQueue ? 'Queue' : 'Direct'}</span>
+            </div>
+          )}
+          {(data.linkedElement || inferredElement) && (
+            <div className="flex items-center space-x-1 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-md text-xs font-medium">
+              <Database className="w-3 h-3" />
+              <span>{data.linkedElement || inferredElement}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       <Handle

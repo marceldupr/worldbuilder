@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { prisma } from '../utils/prisma.js';
 import { templateHelpers } from '../utils/templateHelpers.js';
+import { FrontendGeneratorService } from './FrontendGenerator.service.js';
 
 // Register Handlebars helpers
 Object.entries(templateHelpers).forEach(([name, fn]) => {
@@ -16,16 +17,18 @@ interface GeneratedFile {
 
 export class CodeGeneratorService {
   private templatesDir: string;
+  private frontendGenerator: FrontendGeneratorService;
 
   constructor() {
     // Path to templates directory from backend
     this.templatesDir = path.join(process.cwd(), '..', 'templates');
+    this.frontendGenerator = new FrontendGeneratorService();
   }
 
   /**
    * Generate code for a project
    */
-  async generateProject(projectId: string): Promise<GeneratedFile[]> {
+  async generateProject(projectId: string, options?: { includeFrontend?: boolean }): Promise<GeneratedFile[]> {
     const project = await prisma.project.findUnique({
       where: { id: projectId },
       include: { components: true },
@@ -36,6 +39,25 @@ export class CodeGeneratorService {
     }
 
     const files: GeneratedFile[] = [];
+    
+    // Generate frontend if requested
+    if (options?.includeFrontend) {
+      console.log('[CodeGen] Generating frontend...');
+      try {
+        const frontendFiles = await this.frontendGenerator.generateFrontend(project);
+        // Prefix all frontend files with 'frontend/' directory
+        frontendFiles.forEach(file => {
+          files.push({
+            path: `frontend/${file.path}`,
+            content: file.content,
+          });
+        });
+        console.log(`[CodeGen] ✅ Generated ${frontendFiles.length} frontend files`);
+      } catch (error: any) {
+        console.error('[CodeGen] ❌ Error generating frontend:', error.message);
+        // Continue with backend generation even if frontend fails
+      }
+    }
 
     // Generate package.json
     files.push(await this.generatePackageJson(project));
@@ -444,10 +466,11 @@ model AuditLog {
       winston: '^3.11.0',
     };
 
-    // Add worker dependencies
+    // Add worker dependencies (as optionalDependencies since Redis is optional)
+    const optionalDependencies: Record<string, string> = {};
     if (hasWorkers) {
-      dependencies['bullmq'] = '^5.1.0';
-      dependencies['ioredis'] = '^5.3.2';
+      optionalDependencies['bullmq'] = '^5.1.0';
+      optionalDependencies['ioredis'] = '^5.3.2';
     }
 
     // Add helper dependencies
@@ -485,6 +508,9 @@ model AuditLog {
         }),
       },
       dependencies,
+      ...(hasWorkers && Object.keys(optionalDependencies).length > 0 && {
+        optionalDependencies,
+      }),
       devDependencies: {
         '@types/express': '^4.17.21',
         '@types/cors': '^2.8.17',
@@ -588,15 +614,32 @@ APP_URL=http://localhost:3001
 
 `;
 
-    // Add Redis if workers are used
+    // Add Redis if workers are used (optional)
     if (hasWorkers) {
       content += `# =============================================================================
-# QUEUE / WORKERS (Redis)
+# QUEUE / WORKERS (Optional - Redis for BullMQ)
+# =============================================================================
+# 
+# Workers can run in two modes:
+# 1. QUEUE MODE (with Redis) - Set USE_QUEUE=true and provide Redis connection
+#    - Jobs queued in Redis
+#    - Retry logic, job tracking
+#    - Scalable with multiple workers
+#    - Recommended for production
+#
+# 2. DIRECT MODE (no Redis) - Leave USE_QUEUE=false or omit Redis config
+#    - Jobs execute immediately
+#    - No queue, no tracking
+#    - Simple, no Redis needed
+#    - Good for development or low-traffic apps
 # =============================================================================
 
-# Redis connection for BullMQ workers
-REDIS_HOST=localhost
-REDIS_PORT=6379
+# Enable queue mode (requires Redis)
+USE_QUEUE=false
+
+# Redis connection (only needed if USE_QUEUE=true)
+# REDIS_HOST=localhost
+# REDIS_PORT=6379
 # REDIS_PASSWORD=your_redis_password_if_needed
 
 `;

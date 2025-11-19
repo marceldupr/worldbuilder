@@ -146,13 +146,14 @@ export const generateApi = {
 
 // Code Generation
 export const codeApi = {
-  generate: (projectId: string) =>
+  generate: (projectId: string, includeFrontend: boolean = false) =>
     fetchWithAuth(`/api/code/generate/${projectId}`, {
       method: 'POST',
+      body: JSON.stringify({ includeFrontend }),
     }),
   
-  preview: (projectId: string) =>
-    fetchWithAuth(`/api/code/preview/${projectId}`),
+  preview: (projectId: string, includeFrontend: boolean = false) =>
+    fetchWithAuth(`/api/code/preview/${projectId}?includeFrontend=${includeFrontend}`),
 };
 
 // Deployment
