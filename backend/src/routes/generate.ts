@@ -20,6 +20,14 @@ const GenerateSchemaSchema = z.object({
   componentType: z.enum(['element', 'manipulator', 'worker', 'helper', 'auditor', 'enforcer', 'workflow']),
   name: z.string().min(1),
   description: z.string().min(10),
+  skipRelatedGeneration: z.boolean().optional(), // Skip generating related component schemas
+});
+
+const GenerateSingleComponentSchema = z.object({
+  componentType: z.enum(['element', 'manipulator', 'worker', 'helper', 'auditor', 'enforcer', 'workflow']),
+  name: z.string().min(1),
+  context: z.string().optional(), // Context about the parent component
+  relatedTo: z.string().optional(), // Name of the component this relates to
 });
 
 // POST /api/generate/schema - Generate component schema using AI
@@ -69,8 +77,102 @@ router.post('/schema', async (req: AuthRequest, res): Promise<void> => {
     console.log('[Generate] AI response received, parsing...');
     const schema = JSON.parse(schemaJson);
     console.log('[Generate] ✅ Schema generated successfully');
+    console.log('[Generate] Schema relationships:', JSON.stringify(schema.relationships, null, 2));
 
-    res.json({ schema });
+    // Post-process schema: identify missing related elements and components
+    const result: any = { schema };
+    const missingComponents: Record<string, string[]> = {
+      elements: [],
+      workflows: [],
+      auditors: [],
+      enforcers: [],
+      workers: [],
+      helpers: [],
+    };
+    
+    if (componentType === 'element') {
+      console.log('[Generate] Checking for missing components...');
+      console.log('[Generate] Available components:', availableComponents.map((c: any) => `${c.name}(${c.type})`).join(', '));
+      
+      // Check relationships for missing elements
+      if (schema.relationships && Array.isArray(schema.relationships)) {
+        for (const rel of schema.relationships) {
+          console.log('[Generate] Processing relationship:', JSON.stringify(rel));
+          const relatedElementName = rel.to || rel.target || rel.relatedTo;
+          
+          if (!relatedElementName) {
+            console.warn('[Generate] ⚠️ Relationship missing target name:', rel);
+            continue;
+          }
+          
+          const exists = availableComponents.some(
+            (comp: any) => comp.name === relatedElementName && comp.type === 'element'
+          );
+          
+          console.log(`[Generate] Checking element "${relatedElementName}": exists=${exists}`);
+          
+          if (!exists && !missingComponents.elements.includes(relatedElementName)) {
+            missingComponents.elements.push(relatedElementName);
+            console.log(`[Generate] ➕ Missing element: ${relatedElementName}`);
+          }
+        }
+      }
+      
+      // Check behaviors for missing components (workflows, auditors, workers, helpers, enforcers)
+      if (schema.behaviors && Array.isArray(schema.behaviors)) {
+        for (const behavior of schema.behaviors) {
+          if (behavior.type === 'lifecycle_hook' && behavior.target) {
+            console.log('[Generate] Processing behavior:', JSON.stringify(behavior));
+            
+            let targetType: string | null = null;
+            let targetList: string[] | null = null;
+            
+            // Determine component type based on action
+            if (behavior.action === 'triggerWorkflow') {
+              targetType = 'workflow';
+              targetList = missingComponents.workflows;
+            } else if (behavior.action === 'callAuditor') {
+              targetType = 'auditor';
+              targetList = missingComponents.auditors;
+            } else if (behavior.action === 'enforceRules') {
+              targetType = 'enforcer';
+              targetList = missingComponents.enforcers;
+            } else if (behavior.action === 'queueJob') {
+              targetType = 'worker';
+              targetList = missingComponents.workers;
+            } else if (behavior.action === 'sendNotification') {
+              targetType = 'helper';
+              targetList = missingComponents.helpers;
+            }
+            
+            if (targetType && targetList) {
+              const exists = availableComponents.some(
+                (comp: any) => comp.name === behavior.target && comp.type === targetType
+              );
+              
+              console.log(`[Generate] Checking ${targetType} "${behavior.target}": exists=${exists}`);
+              
+              if (!exists && !targetList.includes(behavior.target)) {
+                targetList.push(behavior.target);
+                console.log(`[Generate] ➕ Missing ${targetType}: ${behavior.target}`);
+              }
+            }
+          }
+        }
+      }
+      
+      // Add to result if any missing components found
+      const hasMissing = Object.values(missingComponents).some(arr => arr.length > 0);
+      if (hasMissing) {
+        result.missingComponents = missingComponents;
+        console.log('[Generate] 🔗 Missing components (will be generated on-demand after user selection):', JSON.stringify(missingComponents, null, 2));
+        // NOTE: Schemas will be generated on-demand via /api/generate/single after user selects which components to create
+      } else {
+        console.log('[Generate] ℹ️ No missing components detected');
+      }
+    }
+
+    res.json(result);
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       console.error('[Generate] Validation error:', error.errors);
@@ -88,6 +190,106 @@ router.post('/schema', async (req: AuthRequest, res): Promise<void> => {
   }
 });
 
+// POST /api/generate/single - Generate a single component schema on-demand
+router.post('/single', async (req: AuthRequest, res): Promise<void> => {
+  try {
+    console.log('[Generate] Single component schema generation request:', req.body);
+    const data = GenerateSingleComponentSchema.parse(req.body);
+    const { componentType, name, relatedTo } = data;
+
+    console.log('[Generate] Type:', componentType, 'Name:', name);
+    
+    const openai = getOpenAIClient();
+    let prompt = '';
+    
+    // Build context-specific prompts for each component type
+    switch (componentType) {
+      case 'element':
+        prompt = `Generate a SIMPLE schema for a ${name} element${relatedTo ? ` that relates to ${relatedTo}` : ''}.
+
+CRITICAL RULES TO PREVENT INFINITE GENERATION:
+- DO NOT add ANY relationships to other elements (except back to ${relatedTo || 'parent'} if needed)
+- DO NOT add ANY lifecycle hooks
+- DO NOT suggest ANY behaviors that trigger other components
+- Focus ONLY on properties for this element
+- Keep it minimal - just the essential properties
+
+Return a JSON schema with properties only.`;
+        break;
+        
+      case 'workflow':
+        prompt = `Generate a workflow schema for ${name}${relatedTo ? ` triggered by ${relatedTo} element` : ''}.
+                    
+CRITICAL: This is a SUPPORT workflow only - do NOT suggest creating new components.
+${relatedTo ? `Use only the ${relatedTo} element.` : ''} Keep it simple with 2-3 steps.`;
+        break;
+        
+      case 'auditor':
+        prompt = `Generate an auditor schema for ${name}${relatedTo ? ` tracking ${relatedTo} element changes` : ''}.
+                    
+Focus on audit events and retention only. 2-3 events maximum.`;
+        break;
+        
+      case 'enforcer':
+        prompt = `Generate an enforcer schema for ${name}${relatedTo ? ` validating ${relatedTo} element rules` : ''}.
+                    
+Focus on 2-3 simple business rules${relatedTo ? ` for ${relatedTo} only` : ''}.`;
+        break;
+        
+      case 'worker':
+        prompt = `Generate a worker schema for ${name}${relatedTo ? ` processing ${relatedTo} element jobs` : ''}.
+                    
+Simple async job processing with 2-3 steps.`;
+        break;
+        
+      case 'helper':
+        prompt = `Generate a helper schema for ${name}${relatedTo ? ` providing utilities for ${relatedTo} element` : ''}.
+                    
+Simple helper with 1-2 utility methods.`;
+        break;
+        
+      default:
+        throw new Error(`Unsupported component type: ${componentType}`);
+    }
+    
+    console.log('[Generate] Calling OpenAI for single component...');
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: getSystemPrompt(componentType) },
+        { role: 'user', content: prompt },
+      ],
+      temperature: 0.7,
+      response_format: { type: 'json_object' },
+    });
+
+    const schemaJson = completion.choices[0]?.message?.content;
+    if (!schemaJson) {
+      throw new Error('No response from OpenAI');
+    }
+
+    const schema = JSON.parse(schemaJson);
+    console.log('[Generate] ✅ Single component schema generated:', name);
+
+    res.json({ 
+      name,
+      schema,
+      description: `${componentType.charAt(0).toUpperCase() + componentType.slice(1)} for ${relatedTo || 'project'}`,
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      console.error('[Generate] Validation error:', error.errors);
+      res.status(400).json({ error: error.errors });
+      return;
+    }
+    console.error('[Generate] ❌ Error generating single component schema:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate schema',
+      details: error.message 
+    });
+  }
+});
+
 function getSystemPrompt(componentType: string): string {
   const basePrompt = `You are an expert system architect helping to design software components. 
 You must respond ONLY with valid JSON. Do not include any explanatory text outside the JSON structure.`;
@@ -97,8 +299,8 @@ You must respond ONLY with valid JSON. Do not include any explanatory text outsi
 
 For an Element component, generate a schema with:
 - properties: array of field definitions (name, type, required, validations)
-- relationships: optional array of relationships to other elements
-- behaviors: optional array of custom methods
+- relationships: array of relationships to other elements (if any are mentioned or implied)
+- behaviors: array of custom methods and lifecycle hooks (be creative based on the description)
 - indexes: suggested database indexes
 
 Types: string, integer, decimal, boolean, date, datetime, uuid, enum, json, image, file, document
@@ -107,7 +309,48 @@ Validations: required, unique, min, max, minLength, maxLength, pattern, default
 Special types:
 - image: stores image URL (use with file upload)
 - file: stores file URL (use with file upload) 
-- document: stores document URL (use with file upload)`,
+- document: stores document URL (use with file upload)
+
+CRITICAL - Relationships format:
+Relationships MUST be objects with these exact fields:
+{
+  "from": "ElementName",  // The current element
+  "to": "RelatedElementName",  // The element this relates to
+  "type": "belongsTo" | "hasOne" | "hasMany" | "manyToMany",
+  "fieldName": "fieldName",  // The field name (e.g., "category", "user", "tags")
+  "required": true/false
+}
+
+Example:
+{
+  "from": "Product",
+  "to": "Category",
+  "type": "belongsTo",
+  "fieldName": "category",
+  "required": true
+}
+
+DO NOT create relationships as properties with uuid type - use the relationship structure above!
+
+For behaviors, include:
+1. Custom methods (type: "custom_method") - business logic methods like restock(), archive(), publish()
+   Example: { type: "custom_method", name: "restock", description: "Add quantity to inventory", parameters: [{ name: "quantity", type: "integer" }] }
+
+2. Lifecycle hooks (type: "lifecycle_hook") - automated actions triggered by CRUD events
+   Triggers: beforeCreate, afterCreate, beforeUpdate, afterUpdate, beforeDelete, afterDelete
+   Actions: triggerWorkflow, callAuditor, enforceRules, queueJob, sendNotification
+   Example: { type: "lifecycle_hook", trigger: "afterCreate", action: "triggerWorkflow", target: "WelcomeWorkflow", description: "Send welcome email to new user" }
+
+CRITICAL RULES FOR LIFECYCLE HOOKS:
+- ALWAYS provide a descriptive "target" name for the component the hook should call
+- If the action is "triggerWorkflow", target should be a workflow name (e.g., "OrderProcessingWorkflow", "NotificationWorkflow")
+- If the action is "callAuditor", target should be an auditor name (e.g., "ProductAuditor", "OrderAuditor")
+- If the action is "enforceRules", target should be an enforcer name (e.g., "ValidationEnforcer", "BusinessRulesEnforcer")
+- If the action is "queueJob", target should be a worker name (e.g., "EmailWorker", "ReportWorker")
+- If the action is "sendNotification", target should be a helper name (e.g., "EmailHelper", "SlackHelper")
+- NEVER leave target empty or null - always provide a meaningful, descriptive name
+
+IMPORTANT: Analyze the description carefully and suggest meaningful behaviors and hooks based on the use case. Be creative and suggest 2-3 useful custom methods and 3-5 relevant lifecycle hooks.`,
 
     manipulator: `${basePrompt}
 
@@ -128,6 +371,19 @@ For a Worker component, generate a schema with:
 - retry: retry strategy (attempts, backoff)
 - timeout: job timeout in milliseconds
 - helpers: which helpers this worker uses`,
+
+    helper: `${basePrompt}
+
+For a Helper component, generate a schema with:
+- integration: type of integration (email, slack, stripe, twilio, s3, custom, etc)
+- methods: array of utility methods this helper provides
+- Each method should have:
+  - name: method name
+  - description: what it does
+  - parameters: array of input parameters
+- config: configuration options (apiKey, webhook URLs, etc)
+
+Focus on useful utility functions and third-party integrations.`,
 
     auditor: `${basePrompt}
 
@@ -183,26 +439,44 @@ Description: ${description}
 
   // Add context about available components for better integration
   if (availableComponents.length > 0) {
-    prompt += `\nAvailable components in this project:\n`;
-    availableComponents.forEach((comp) => {
-      prompt += `- ${comp.name} (${comp.type})`;
-      if (comp.schema) {
-        // Include key details
-        if (comp.type === 'element' && comp.schema.properties) {
+    const elements = availableComponents.filter(c => c.type === 'element');
+    const workflows = availableComponents.filter(c => c.type === 'workflow');
+    const auditors = availableComponents.filter(c => c.type === 'auditor');
+    const workers = availableComponents.filter(c => c.type === 'worker');
+    
+    prompt += `\nExisting components in this project:\n`;
+    
+    if (elements.length > 0) {
+      prompt += `\nElements (${elements.length}):\n`;
+      elements.forEach((comp) => {
+        prompt += `- ${comp.name}`;
+        if (comp.schema?.properties) {
           const fields = comp.schema.properties.map((p: any) => p.name).slice(0, 5).join(', ');
-          prompt += ` - Fields: ${fields}`;
+          prompt += ` [${fields}]`;
         }
-        if (comp.type === 'helper' && comp.schema.integration) {
-          prompt += ` - Integration: ${comp.schema.integration}`;
-        }
-      }
-      prompt += '\n';
-    });
+        prompt += '\n';
+      });
+    }
+    
+    if (workflows.length > 0) {
+      prompt += `\nWorkflows: ${workflows.map(c => c.name).join(', ')}\n`;
+    }
+    if (auditors.length > 0) {
+      prompt += `Auditors: ${auditors.map(c => c.name).join(', ')}\n`;
+    }
+    if (workers.length > 0) {
+      prompt += `Workers: ${workers.map(c => c.name).join(', ')}\n`;
+    }
 
     // Add specific guidance based on component type
-    if (['worker', 'workflow', 'enforcer', 'auditor'].includes(componentType)) {
+    if (componentType === 'element') {
+      prompt += `\nFor relationships: Consider if this element relates to any existing elements above. If relationships are implied by the description, include them.`;
+      prompt += `\nFor behaviors: Think about lifecycle hooks that could trigger existing workflows, auditors, or workers.`;
+    } else if (['worker', 'workflow', 'enforcer', 'auditor'].includes(componentType)) {
       prompt += `\nIMPORTANT: Reference and integrate with the existing components listed above. Generate specific logic that uses these actual components by name, not generic placeholders.`;
     }
+  } else if (componentType === 'element') {
+    prompt += `\nNote: This is the first element in the project. If the description implies relationships to other concepts (like Category, Tag, User, etc), include them in the relationships array.`;
   }
 
   prompt += `\nReturn a JSON schema that follows the structure defined in the system prompt.`;

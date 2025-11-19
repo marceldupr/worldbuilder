@@ -126,6 +126,17 @@ export const generateApi = {
       body: JSON.stringify(data),
     }),
   
+  single: (data: {
+    componentType: string;
+    name: string;
+    context?: string;
+    relatedTo?: string;
+  }) =>
+    fetchWithAuth('/api/generate/single', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  
   testData: (componentId: string) =>
     fetchWithAuth('/api/generate/test-data', {
       method: 'POST',

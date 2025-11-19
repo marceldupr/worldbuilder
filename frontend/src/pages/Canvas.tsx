@@ -144,8 +144,13 @@ function CanvasContent() {
                   : n
               );
             } else if (change.type === 'select') {
+              // When selecting a node, deselect all others (single selection mode)
               return nds.map((n) =>
-                n.id === nodeId ? { ...n, selected: change.selected } : n
+                n.id === nodeId 
+                  ? { ...n, selected: change.selected } 
+                  : change.selected // if we're selecting this node, deselect all others
+                    ? { ...n, selected: false } 
+                    : n
               );
             }
             return nds;
@@ -966,6 +971,7 @@ function CanvasContent() {
             onDragOver={onDragOver}
             nodeTypes={nodeTypes}
             fitView
+            multiSelectionKeyCode={null}
             defaultEdgeOptions={{
               type: 'smoothstep',
               animated: true,

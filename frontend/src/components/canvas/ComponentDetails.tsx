@@ -145,7 +145,7 @@ export function ComponentDetails({ nodeId, nodes, onRequestGenerateData }: Compo
               } disabled:opacity-50`}
             >
               {component.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
-              <span>{component.locked ? 'Locked' : 'Lock Tests'}</span>
+              <span>{component.locked ? 'Locked' : 'Protect with Tests'}</span>
             </button>
           )}
         </div>
@@ -236,6 +236,47 @@ export function ComponentDetails({ nodeId, nodes, onRequestGenerateData }: Compo
                 <div className="text-xs text-gray-600 font-medium">
                   {rel.from} → {rel.to}
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Behaviors & Lifecycle Hooks (for Elements) */}
+      {component.type === 'element' && component.schema?.behaviors && component.schema.behaviors.length > 0 && (
+        <div className="rounded-2xl bg-gradient-to-br from-purple-50 to-purple-100 p-5 border border-purple-200 shadow-md">
+          <div className="mb-3 flex items-center space-x-2">
+            <div className="p-2 rounded-lg bg-purple-500 text-white">
+              <FileText className="w-4 h-4" />
+            </div>
+            <h4 className="text-sm font-bold text-purple-900">
+              Behaviors & Lifecycle Hooks ({component.schema.behaviors.length})
+            </h4>
+          </div>
+          <div className="max-h-48 overflow-y-auto space-y-2">
+            {component.schema.behaviors.map((behavior: any, i: number) => (
+              <div key={i} className="rounded-xl bg-white p-3 border border-purple-100 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-semibold text-gray-900 text-sm">
+                    {behavior.type === 'custom_method' ? behavior.name : `${behavior.trigger} Hook`}
+                  </span>
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                    behavior.type === 'custom_method' 
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {behavior.type === 'custom_method' ? 'Method' : 'Hook'}
+                  </span>
+                </div>
+                {behavior.description && (
+                  <div className="text-xs text-gray-600 mb-1">{behavior.description}</div>
+                )}
+                {behavior.action && (
+                  <div className="text-xs text-gray-500">
+                    <span className="font-semibold">{behavior.action}</span>
+                    {behavior.target && <span> → {behavior.target}</span>}
+                  </div>
+                )}
               </div>
             ))}
           </div>
