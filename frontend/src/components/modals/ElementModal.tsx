@@ -68,10 +68,23 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
         projectId,
       });
 
+      console.log('[ElementModal] AI response:', result);
+      
+      // Validate schema structure
+      if (!result || !result.schema) {
+        throw new Error('Invalid response from AI - no schema returned');
+      }
+      
+      if (!result.schema.properties || !Array.isArray(result.schema.properties)) {
+        console.error('[ElementModal] Invalid schema structure:', result.schema);
+        throw new Error('Invalid schema structure - properties must be an array');
+      }
+
       setSchema(result.schema);
       setStep('review');
       showToast(isEditing ? 'Schema updated with AI!' : 'Schema generated successfully!', 'success');
     } catch (error: any) {
+      console.error('[ElementModal] Error generating schema:', error);
       showToast(error.message || 'Failed to generate schema', 'error');
     } finally {
       setLoading(false);
@@ -328,7 +341,28 @@ export function ElementModal({ projectId, position, existingComponent, onClose, 
                 </div>
               )}
 
-              {schema && schema.properties && (
+              {/* Debug info if schema is invalid */}
+              {schema && (!schema.properties || !Array.isArray(schema.properties) || schema.properties.length === 0) && (
+                <div className="rounded-xl bg-red-50 border border-red-200 p-4 mt-4">
+                  <div className="flex items-start space-x-2">
+                    <div className="text-red-600">⚠️</div>
+                    <div>
+                      <h4 className="text-sm font-bold text-red-900 mb-2">Invalid Schema Structure</h4>
+                      <p className="text-xs text-red-700 mb-2">
+                        The AI generated a schema with an unexpected structure. Please try regenerating or contact support.
+                      </p>
+                      <details className="text-xs text-red-600">
+                        <summary className="cursor-pointer font-semibold mb-1">Debug Info</summary>
+                        <pre className="bg-red-100 p-2 rounded mt-2 overflow-auto max-h-40">
+                          {JSON.stringify(schema, null, 2)}
+                        </pre>
+                      </details>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {schema && Array.isArray(schema.properties) && schema.properties.length > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-bold text-gray-900">

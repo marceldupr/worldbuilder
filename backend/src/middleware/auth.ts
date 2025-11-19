@@ -2,10 +2,16 @@ import { Request, Response, NextFunction } from 'express';
 import { createClient } from '@supabase/supabase-js';
 import { prisma } from '../utils/prisma.js';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_ANON_KEY || ''
-);
+// Lazy-load Supabase client to ensure env vars are loaded
+function getSupabaseClient() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required');
+  }
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+  );
+}
 
 /**
  * Ensure user exists in our database
@@ -64,6 +70,7 @@ export async function authMiddleware(
     const token = authHeader.substring(7);
     console.log('[Auth] Token:', token.substring(0, 20) + '...');
 
+    const supabase = getSupabaseClient();
     const {
       data: { user },
       error,

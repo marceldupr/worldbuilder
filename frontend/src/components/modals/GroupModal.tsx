@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Group } from '../../stores/canvasStore';
-import { Globe, FolderKanban, Settings, X, Lightbulb } from 'lucide-react';
+import { Globe, FolderKanban, Settings, X, Lightbulb, Database } from 'lucide-react';
 
 interface GroupModalProps {
   existingGroup?: Group;
@@ -21,9 +21,9 @@ const groupTypes = [
   },
   { 
     value: 'feature' as const, 
-    label: 'Feature', 
-    Icon: FolderKanban,
-    description: 'Business feature groups (e.g., Task Management, Documents)',
+    label: 'Models & Features', 
+    Icon: Database,
+    description: 'Data Models & business features (e.g., User Model, Product Model, Orders)',
     color: '#3b82f6',
     iconColor: 'text-blue-600',
     bgColor: 'bg-blue-50'

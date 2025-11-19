@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef, DragEvent } from 'react';
+import { useCallback, useEffect, useState, useRef, useMemo, DragEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactFlow, {
   MiniMap,
@@ -20,7 +20,7 @@ import { GroupModal } from '../components/modals/GroupModal';
 import { 
   ArrowLeft, Code, Github, Edit, Database, Globe, 
   Settings, Wrench, Lock, ClipboardCheck, CheckCircle, Workflow as WorkflowIcon,
-  FolderKanban, Trash2, Info
+  FolderKanban, Trash2, Info, X
 } from 'lucide-react';
 import { ElementModal } from '../components/modals/ElementModal';
 import { ManipulatorModal } from '../components/modals/ManipulatorModal';
@@ -43,6 +43,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 
 const nodeTypes = {
   component: ComponentNode,
+  group: GroupNode,
 };
 
 function CanvasContent() {
@@ -50,10 +51,10 @@ function CanvasContent() {
   const navigate = useNavigate();
   const { user, signOut } = useAuthStore();
   const { 
-    nodes, 
+    nodes: componentNodes, 
     edges, 
     groups,
-    setNodes, 
+    setNodes: setComponentNodes, 
     setEdges, 
     loadCanvas, 
     addNode,
@@ -64,6 +65,7 @@ function CanvasContent() {
     addNodeToGroup,
     removeNodeFromGroup,
   } = useCanvasStore();
+
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { project } = useReactFlow();
   
@@ -87,6 +89,10 @@ function CanvasContent() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [expandedTips, setExpandedTips] = useState<Set<string>>(new Set());
   const [showAllTips, setShowAllTips] = useState(false);
+  const [showModelsTooltip, setShowModelsTooltip] = useState(() => {
+    // Check if user has dismissed the tooltip before
+    return localStorage.getItem('hideModelsTooltip') !== 'true';
+  });
   const [confirmDelete, setConfirmDelete] = useState<{
     type: 'component' | 'group' | 'edge';
     id: string;
@@ -115,27 +121,39 @@ function CanvasContent() {
 
   const onNodesChange = useCallback(
     (changes: any) => {
-      setNodes((nds: Node[]) => {
-        // Apply changes to nodes
-        return changes.reduce((acc: Node[], change: any) => {
-          if (change.type === 'remove') {
-            return acc.filter((n) => n.id !== change.id);
-          } else if (change.type === 'position' && change.position) {
-            return acc.map((n) =>
-              n.id === change.id
-                ? { ...n, position: change.position, positionAbsolute: change.positionAbsolute }
-                : n
-            );
-          } else if (change.type === 'select') {
-            return acc.map((n) =>
-              n.id === change.id ? { ...n, selected: change.selected } : n
-            );
+      // Separate changes for groups and components
+      changes.forEach((change: any) => {
+        const nodeId = change.id;
+        const isGroup = groups.some(g => g.id === nodeId);
+
+        if (isGroup) {
+          // Handle group node changes
+          if (change.type === 'position' && change.position) {
+            updateGroup(nodeId, { position: change.position });
           }
-          return acc;
-        }, nds);
+          // Group removal is handled by the delete button, not here
+        } else {
+          // Handle component node changes
+          setComponentNodes((nds: Node[]) => {
+            if (change.type === 'remove') {
+              return nds.filter((n) => n.id !== nodeId);
+            } else if (change.type === 'position' && change.position) {
+              return nds.map((n) =>
+                n.id === nodeId
+                  ? { ...n, position: change.position, positionAbsolute: change.positionAbsolute }
+                  : n
+              );
+            } else if (change.type === 'select') {
+              return nds.map((n) =>
+                n.id === nodeId ? { ...n, selected: change.selected } : n
+              );
+            }
+            return nds;
+          });
+        }
       });
     },
-    [setNodes]
+    [groups, setComponentNodes, updateGroup]
   );
 
   const onEdgesChange = useCallback(
@@ -159,9 +177,9 @@ function CanvasContent() {
   const onConnect = useCallback(
     (params: Connection | Edge) => {
       console.log('[Canvas] onConnect triggered!', params);
-      // Find the source and target nodes
-      const sourceNode = nodes.find((n) => n.id === params.source);
-      const targetNode = nodes.find((n) => n.id === params.target);
+      // Find the source and target nodes (only connect component nodes, not groups)
+      const sourceNode = componentNodes.find((n) => n.id === params.source);
+      const targetNode = componentNodes.find((n) => n.id === params.target);
       console.log('[Canvas] Source node:', sourceNode);
       console.log('[Canvas] Target node:', targetNode);
 
@@ -174,7 +192,7 @@ function CanvasContent() {
         console.error('[Canvas] Missing nodes!', { sourceNode, targetNode });
       }
     },
-    [nodes]
+    [componentNodes]
   );
 
   const handleRelationshipDefined = useCallback(
@@ -286,6 +304,9 @@ function CanvasContent() {
 
   const handleNodeClick = useCallback(
     async (event: any, node: Node) => {
+      // Skip if it's a group node
+      if (node.type === 'group') return;
+
       // Check if it's a double-click to edit
       if (event.detail === 2) {
         try {
@@ -324,7 +345,7 @@ function CanvasContent() {
 
   const handleComponentUpdated = (component: any) => {
     // Update the node in the canvas
-    setNodes((nds: Node[]) =>
+    setComponentNodes((nds: Node[]) =>
       nds.map((n) => {
         if (n.id === component.id) {
           const group = getNodeGroup(n.id);
@@ -360,7 +381,7 @@ function CanvasContent() {
   };
 
   const handleDeleteNode = useCallback(async () => {
-    const selectedNodes = nodes.filter((n) => n.selected);
+    const selectedNodes = componentNodes.filter((n) => n.selected);
     if (selectedNodes.length === 0) return;
 
     // Show confirm modal instead of browser confirm
@@ -371,13 +392,13 @@ function CanvasContent() {
         ? selectedNodes[0].data.label 
         : `${selectedNodes.length} components`
     });
-  }, [nodes]);
+  }, [componentNodes]);
   
   const executeDeleteComponent = async () => {
     if (!confirmDelete || confirmDelete.type !== 'component') return;
     
     const nodeIds = confirmDelete.id.split(',');
-    const nodesToDelete = nodes.filter(n => nodeIds.includes(n.id));
+    const nodesToDelete = componentNodes.filter(n => nodeIds.includes(n.id));
     
     try {
       // Delete from backend
@@ -386,7 +407,7 @@ function CanvasContent() {
       }
 
       // Remove from canvas
-      setNodes((nds: Node[]) => nds.filter((n) => !nodeIds.includes(n.id)));
+      setComponentNodes((nds: Node[]) => nds.filter((n) => !nodeIds.includes(n.id)));
       setEdges((eds: Edge[]) =>
         eds.filter((e) => !nodeIds.some(id => e.source === id || e.target === id))
       );
@@ -406,7 +427,7 @@ function CanvasContent() {
       key: 'g',
       ctrl: true,
       handler: () => {
-        if (nodes.length > 0) setShowCodePreview(true);
+        if (componentNodes.length > 0) setShowCodePreview(true);
       },
       description: 'Generate code (Ctrl+G)',
     },
@@ -451,6 +472,11 @@ function CanvasContent() {
       setExpandedTips(new Set(['element', 'manipulator', 'worker', 'helper', 'auth', 'auditor', 'enforcer', 'workflow']));
       setShowAllTips(true);
     }
+  };
+
+  const dismissModelsTooltip = () => {
+    setShowModelsTooltip(false);
+    localStorage.setItem('hideModelsTooltip', 'true');
   };
 
   const componentTips = {
@@ -527,12 +553,12 @@ function CanvasContent() {
     setShowGroupModal(true);
   };
 
-  const handleEditGroup = (group: any) => {
+  const handleEditGroup = useCallback((group: any) => {
     setEditingGroup(group);
     setShowGroupModal(true);
-  };
+  }, []);
 
-  const handleSaveGroup = (groupData: any) => {
+  const handleSaveGroup = useCallback((groupData: any) => {
     if (editingGroup) {
       updateGroup(editingGroup.id, groupData);
     } else {
@@ -542,9 +568,9 @@ function CanvasContent() {
       };
       addGroup(newGroup);
     }
-  };
+  }, [editingGroup, updateGroup, addGroup]);
 
-  const handleDeleteGroup = (groupId: string) => {
+  const handleDeleteGroup = useCallback((groupId: string) => {
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
 
@@ -553,7 +579,11 @@ function CanvasContent() {
       id: groupId,
       name: group.name
     });
-  };
+  }, [groups]);
+
+  const handleResizeGroup = useCallback((groupId: string, dimensions: { width: number; height: number }) => {
+    updateGroup(groupId, { dimensions });
+  }, [updateGroup]);
   
   const executeDeleteGroup = async () => {
     if (!confirmDelete || confirmDelete.type !== 'group') return;
@@ -566,6 +596,9 @@ function CanvasContent() {
   // Check if a node is being dropped into a group
   const handleNodeDragStop = useCallback(
     (_event: any, node: Node) => {
+      // Skip if it's a group node
+      if (node.type === 'group') return;
+
       const nodeRect = {
         x: node.position.x,
         y: node.position.y,
@@ -584,17 +617,22 @@ function CanvasContent() {
           height: group.dimensions?.height || 300,
         };
 
-        // Simple bounding box collision
+        // More forgiving collision detection - check if the center of the node is inside
+        // This prevents accidental removal when dragging near edges
+        const nodeCenterX = nodeRect.x + nodeRect.width / 2;
+        const nodeCenterY = nodeRect.y + nodeRect.height / 2;
+        
+        const tolerance = 30; // pixels of tolerance at the edges
         const isInside =
-          nodeRect.x >= groupRect.x &&
-          nodeRect.x + nodeRect.width <= groupRect.x + groupRect.width &&
-          nodeRect.y >= groupRect.y &&
-          nodeRect.y + nodeRect.height <= groupRect.y + groupRect.height;
+          nodeCenterX >= groupRect.x + tolerance &&
+          nodeCenterX <= groupRect.x + groupRect.width - tolerance &&
+          nodeCenterY >= groupRect.y + tolerance &&
+          nodeCenterY <= groupRect.y + groupRect.height - tolerance;
 
         if (isInside && !group.nodeIds.includes(node.id)) {
           addNodeToGroup(node.id, group.id);
           // Update node data to show group badge
-          setNodes((nds: Node[]) =>
+          setComponentNodes((nds: Node[]) =>
             nds.map((n) =>
               n.id === node.id
                 ? {
@@ -612,7 +650,7 @@ function CanvasContent() {
         } else if (!isInside && group.nodeIds.includes(node.id)) {
           removeNodeFromGroup(node.id, group.id);
           // Remove group badge from node
-          setNodes((nds: Node[]) =>
+          setComponentNodes((nds: Node[]) =>
             nds.map((n) =>
               n.id === node.id
                 ? {
@@ -630,13 +668,38 @@ function CanvasContent() {
         }
       });
     },
-    [groups, addNodeToGroup, removeNodeFromGroup, setNodes]
+    [groups, addNodeToGroup, removeNodeFromGroup, setComponentNodes]
   );
 
   // Get group for a node (if any)
   const getNodeGroup = (nodeId: string) => {
     return groups.find(g => g.nodeIds.includes(nodeId));
   };
+
+  // Convert groups to React Flow nodes (after all handlers are defined)
+  const groupNodes: Node[] = useMemo(() => groups.map(group => ({
+    id: group.id,
+    type: 'group',
+    position: group.position,
+    data: {
+      group,
+      onToggleCollapse: toggleGroupCollapse,
+      onEdit: handleEditGroup,
+      onDelete: handleDeleteGroup,
+      onResize: handleResizeGroup,
+    },
+    draggable: true,
+    selectable: true,
+    style: {
+      zIndex: -1,
+      background: 'transparent',
+      border: 'none',
+      padding: 0,
+    },
+  })), [groups, toggleGroupCollapse, handleEditGroup, handleDeleteGroup, handleResizeGroup]);
+
+  // Combine component nodes and group nodes
+  const nodes = useMemo(() => [...groupNodes, ...componentNodes], [groupNodes, componentNodes]);
 
   return (
     <div className="flex h-screen flex-col bg-gradient-to-br from-gray-50 via-blue-50/20 to-purple-50/10">
@@ -668,11 +731,11 @@ function CanvasContent() {
           </div>
           <div className="flex items-center space-x-3">
             <div className="text-xs font-semibold text-gray-600 bg-gray-100/80 px-3 py-1.5 rounded-full">
-              {nodes.length} components
+              {componentNodes.length} components
             </div>
             <button
               onClick={() => setShowCodePreview(true)}
-              disabled={nodes.length === 0}
+              disabled={componentNodes.length === 0}
               className="rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 disabled:opacity-50 disabled:shadow-none transition-all hover:-translate-y-0.5 flex items-center space-x-2"
             >
               <Code className="w-4 h-4" />
@@ -680,7 +743,7 @@ function CanvasContent() {
             </button>
             <button
               onClick={() => setShowGitHubPush(true)}
-              disabled={nodes.length === 0}
+              disabled={componentNodes.length === 0}
               className="rounded-xl bg-gradient-to-r from-gray-900 to-gray-800 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-gray-900/30 hover:shadow-xl hover:shadow-gray-900/40 disabled:opacity-50 disabled:shadow-none transition-all hover:-translate-y-0.5 flex items-center space-x-2"
             >
               <Github className="w-4 h-4" />
@@ -777,6 +840,50 @@ function CanvasContent() {
               <span>{showAllTips ? 'Hide' : 'Tips'}</span>
             </button>
           </div>
+
+          {/* Models Info Section - Dismissible */}
+          {showModelsTooltip && (
+            <div className="mb-6 p-4 bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl border-2 border-slate-200/80 shadow-sm relative">
+              <button
+                onClick={dismissModelsTooltip}
+                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 p-1 hover:bg-white/50 rounded-lg transition-all"
+                title="Dismiss tip"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex items-start space-x-3 pr-6">
+                <div className="p-2 rounded-lg bg-slate-600 shadow-sm flex-shrink-0">
+                  <Database className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-gray-900 mb-2">💡 Data Models</h4>
+                  <p className="text-xs text-gray-700 leading-relaxed mb-3">
+                    Start by creating your <span className="font-semibold text-blue-600">Elements</span> (data models). These are the core entities of your application.
+                  </p>
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex items-start space-x-2">
+                      <span className="text-green-600 font-bold mt-0.5">✓</span>
+                      <span className="text-gray-600"><span className="font-semibold">User, Product, Order, Post</span></span>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="text-green-600 font-bold mt-0.5">✓</span>
+                      <span className="text-gray-600"><span className="font-semibold">Customer, Invoice, Booking</span></span>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <span className="text-green-600 font-bold mt-0.5">✓</span>
+                      <span className="text-gray-600">Any entity that holds data</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-slate-200">
+                    <p className="text-xs text-gray-600">
+                      <span className="font-semibold text-slate-700">Then add:</span> Data APIs, Workers, Auth, etc.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             {[
               { name: 'Element', Icon: Database, color: 'bg-gradient-to-br from-blue-50 to-blue-100', iconColor: 'text-blue-600', ring: 'hover:ring-2 hover:ring-blue-400/50', type: 'element', accentColor: 'blue' },
@@ -847,17 +954,6 @@ function CanvasContent() {
 
         {/* Canvas */}
         <div className="flex-1 relative h-full" ref={reactFlowWrapper}>
-          {/* Render groups as background elements */}
-          {groups.map((group) => (
-            <GroupNode
-              key={group.id}
-              group={group}
-              onToggleCollapse={toggleGroupCollapse}
-              onEdit={handleEditGroup}
-              onDelete={handleDeleteGroup}
-            />
-          ))}
-          
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -910,7 +1006,7 @@ function CanvasContent() {
             )}
           </div>
 
-          <ComponentStats components={nodes.map(n => ({ type: n.data.type }))} />
+          <ComponentStats components={componentNodes.map(n => ({ type: n.data.type }))} />
 
           {selectedNodeId && (
             <div className="mt-6">
@@ -921,7 +1017,7 @@ function CanvasContent() {
                 <div className="flex items-center space-x-1">
                   <button
                     onClick={() => {
-                      const node = nodes.find(n => n.id === selectedNodeId);
+                      const node = componentNodes.find(n => n.id === selectedNodeId);
                       if (!node) return;
                       
                       setConfirmDelete({
@@ -945,7 +1041,7 @@ function CanvasContent() {
               </div>
               <ComponentDetails 
                 nodeId={selectedNodeId} 
-                nodes={nodes} 
+                nodes={componentNodes} 
                 onRequestGenerateData={(componentId, componentName) => {
                   setShowGenerateDataModal({ componentId, componentName });
                 }}
@@ -966,7 +1062,7 @@ function CanvasContent() {
             <div className="space-y-3">
               <button
                 onClick={() => setShowCodePreview(true)}
-                disabled={nodes.length === 0}
+                disabled={componentNodes.length === 0}
                 className="w-full rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 p-4 text-left hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3 transition-all group"
               >
                 <div className="p-2 rounded-lg bg-blue-500 text-white group-hover:scale-110 transition-transform">
@@ -979,7 +1075,7 @@ function CanvasContent() {
               </button>
               <button
                 onClick={() => setShowGitHubPush(true)}
-                disabled={nodes.length === 0}
+                disabled={componentNodes.length === 0}
                 className="w-full rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 p-4 text-left hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3 transition-all group"
               >
                 <div className="p-2 rounded-lg bg-gray-900 text-white group-hover:scale-110 transition-transform">
@@ -1124,7 +1220,7 @@ function CanvasContent() {
             confirmDelete.type === 'component'
               ? confirmDelete.id.includes(',')
                 ? confirmDelete.id.split(',').map(id => {
-                    const node = nodes.find(n => n.id === id);
+                    const node = componentNodes.find(n => n.id === id);
                     return node ? node.data.label : 'Unknown';
                   })
                 : [confirmDelete.name]
@@ -1159,7 +1255,7 @@ function CanvasContent() {
               const result = await componentsApi.lock(showGenerateDataModal.componentId);
               
               // Save test data to component schema
-              const component = nodes.find(n => n.id === showGenerateDataModal.componentId);
+              const component = componentNodes.find(n => n.id === showGenerateDataModal.componentId);
               if (component && response.testData) {
                 await componentsApi.update(showGenerateDataModal.componentId, {
                   schema: {

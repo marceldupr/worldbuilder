@@ -5,9 +5,16 @@ import type { AuthRequest } from '../middleware/auth.js';
 import { prisma } from '../utils/prisma.js';
 
 const router = Router();
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+
+// Lazy-load OpenAI client to ensure env vars are loaded
+function getOpenAIClient() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
+  return new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+}
 
 const GenerateSchemaSchema = z.object({
   componentType: z.enum(['element', 'manipulator', 'worker', 'helper', 'auditor', 'enforcer', 'workflow']),
@@ -43,6 +50,7 @@ router.post('/schema', async (req: AuthRequest, res): Promise<void> => {
     const userPrompt = getUserPrompt(componentType, name, description, availableComponents);
 
     console.log('[Generate] Calling OpenAI...');
+    const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
@@ -237,6 +245,7 @@ ${JSON.stringify(component.schema, null, 2)}
 Return realistic test data that can be used in unit tests.`;
 
     console.log('[Generate] Calling OpenAI for test data...');
+    const openai = getOpenAIClient();
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [

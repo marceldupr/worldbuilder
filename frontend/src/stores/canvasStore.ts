@@ -113,11 +113,32 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   },
 
   updateGroup: (id, updates) => {
-    set((state) => ({
-      groups: state.groups.map((g) =>
-        g.id === id ? { ...g, ...updates } : g
-      ),
-    }));
+    set((state) => {
+      const group = state.groups.find(g => g.id === id);
+      
+      // If position is being updated and group has child nodes, move them too
+      if (updates.position && group && group.nodeIds.length > 0) {
+        const dx = updates.position.x - group.position.x;
+        const dy = updates.position.y - group.position.y;
+        
+        return {
+          groups: state.groups.map((g) =>
+            g.id === id ? { ...g, ...updates } : g
+          ),
+          nodes: state.nodes.map((n) =>
+            group.nodeIds.includes(n.id)
+              ? { ...n, position: { x: n.position.x + dx, y: n.position.y + dy } }
+              : n
+          ),
+        };
+      }
+      
+      return {
+        groups: state.groups.map((g) =>
+          g.id === id ? { ...g, ...updates } : g
+        ),
+      };
+    });
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => get().saveCanvas(), 1000);
   },
@@ -133,13 +154,52 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   },
 
   addNodeToGroup: (nodeId, groupId) => {
-    set((state) => ({
-      groups: state.groups.map((g) =>
-        g.id === groupId && !g.nodeIds.includes(nodeId)
-          ? { ...g, nodeIds: [...g.nodeIds, nodeId] }
-          : g
-      ),
-    }));
+    set((state) => {
+      const group = state.groups.find(g => g.id === groupId);
+      if (!group || group.nodeIds.includes(nodeId)) return state;
+      
+      // Add node to group
+      const updatedGroups = state.groups.map((g) =>
+        g.id === groupId ? { ...g, nodeIds: [...g.nodeIds, nodeId] } : g
+      );
+      
+      // Calculate new group dimensions based on all nodes inside
+      const groupNodes = state.nodes.filter(n => 
+        [...group.nodeIds, nodeId].includes(n.id)
+      );
+      
+      if (groupNodes.length > 0) {
+        // Find bounding box of all nodes
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        
+        groupNodes.forEach(node => {
+          minX = Math.min(minX, node.position.x);
+          minY = Math.min(minY, node.position.y);
+          maxX = Math.max(maxX, node.position.x + 220); // node width ~220px
+          maxY = Math.max(maxY, node.position.y + 120); // node height ~120px
+        });
+        
+        // Add padding
+        const padding = 40;
+        const newWidth = Math.max(400, maxX - minX + padding * 2);
+        const newHeight = Math.max(300, maxY - minY + padding * 2);
+        
+        // Update group position to encompass all nodes
+        const finalGroups = updatedGroups.map(g =>
+          g.id === groupId
+            ? {
+                ...g,
+                position: { x: minX - padding, y: minY - padding },
+                dimensions: { width: newWidth, height: newHeight },
+              }
+            : g
+        );
+        
+        return { groups: finalGroups };
+      }
+      
+      return { groups: updatedGroups };
+    });
     if (saveTimeout) clearTimeout(saveTimeout);
     saveTimeout = setTimeout(() => get().saveCanvas(), 1000);
   },
@@ -160,20 +220,46 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     try {
       const project = await projectsApi.get(projectId);
       
-      if (project.canvasData) {
-        set({
-          nodes: project.canvasData.nodes || [],
-          edges: project.canvasData.edges || [],
-          groups: project.canvasData.groups || [],
-          projectId,
-        });
-      } else {
-        set({
-          nodes: [],
-          edges: [],
-          groups: [],
-          projectId,
-        });
+      // Load existing canvas data
+      const canvasData = project.canvasData || { nodes: [], edges: [], groups: [] };
+      
+      // Get all components from the database
+      const components = project.components || [];
+      
+      // Create a map of existing node IDs
+      const existingNodeIds = new Set(canvasData.nodes.map((n: Node) => n.id));
+      
+      // Create nodes for any components that don't have nodes yet
+      const missingComponentNodes: Node[] = components
+        .filter((comp: any) => !existingNodeIds.has(comp.id))
+        .map((comp: any) => ({
+          id: comp.id,
+          type: 'component',
+          position: comp.position || { x: 100, y: 100 },
+          data: {
+            label: comp.name,
+            type: comp.type,
+            status: comp.status,
+            description: comp.description,
+            locked: comp.locked || false,
+          },
+        }));
+      
+      // Combine existing nodes with missing component nodes
+      const allNodes = [...canvasData.nodes, ...missingComponentNodes];
+      
+      set({
+        nodes: allNodes,
+        edges: canvasData.edges || [],
+        groups: canvasData.groups || [],
+        projectId,
+      });
+      
+      // If we added missing nodes, save the canvas immediately
+      if (missingComponentNodes.length > 0) {
+        console.log(`[Canvas] Recovered ${missingComponentNodes.length} components without nodes`);
+        // Save after a brief delay to ensure state is updated
+        setTimeout(() => get().saveCanvas(), 100);
       }
     } catch (error) {
       console.error('Error loading canvas:', error);

@@ -1,8 +1,11 @@
+import dotenv from 'dotenv';
+// Load environment variables FIRST, before any other imports
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
 import { createLogger } from './utils/logger.js';
 import { projectRouter } from './routes/projects.js';
 import { componentRouter } from './routes/components.js';
@@ -11,8 +14,6 @@ import { codeRouter } from './routes/code.js';
 import { deployRouter } from './routes/deploy.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authMiddleware } from './middleware/auth.js';
-
-dotenv.config();
 
 const app = express();
 const logger = createLogger();

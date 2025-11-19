@@ -1,13 +1,6 @@
-import { memo } from 'react';
-import { Group } from '../../stores/canvasStore';
+import React, { memo, useState, useRef, useEffect } from 'react';
+import { NodeProps, useReactFlow } from 'reactflow';
 import { Edit, Trash2, ChevronRight } from 'lucide-react';
-
-interface GroupNodeProps {
-  group: Group;
-  onToggleCollapse: (id: string) => void;
-  onEdit: (group: Group) => void;
-  onDelete: (id: string) => void;
-}
 
 const groupTypeColors = {
   system: {
@@ -33,25 +26,91 @@ const groupTypeColors = {
   },
 };
 
-export const GroupNode = memo(({ group, onToggleCollapse, onEdit, onDelete }: GroupNodeProps) => {
-  const colors = groupTypeColors[group.type];
+export const GroupNode = memo(({ data }: NodeProps) => {
+  const { group, onToggleCollapse, onEdit, onDelete, onResize } = data;
+  const colors = groupTypeColors[group.type as keyof typeof groupTypeColors];
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeDirection, setResizeDirection] = useState<string>('');
+  const resizeStartPos = useRef({ x: 0, y: 0 });
+  const resizeStartSize = useRef({ width: 0, height: 0 });
+  const { getZoom } = useReactFlow();
+
+  const handleResizeStart = (e: React.MouseEvent, direction: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    setIsResizing(true);
+    setResizeDirection(direction);
+    resizeStartPos.current = { x: e.clientX, y: e.clientY };
+    resizeStartSize.current = {
+      width: group.dimensions?.width || 400,
+      height: group.dimensions?.height || 300,
+    };
+  };
+
+  useEffect(() => {
+    const handleResizeMove = (e: MouseEvent) => {
+      if (!isResizing || !onResize) return;
+
+      const zoom = getZoom();
+      const dx = (e.clientX - resizeStartPos.current.x) / zoom;
+      const dy = (e.clientY - resizeStartPos.current.y) / zoom;
+
+      let newWidth = resizeStartSize.current.width;
+      let newHeight = resizeStartSize.current.height;
+
+      if (resizeDirection.includes('e')) {
+        newWidth = Math.max(300, resizeStartSize.current.width + dx);
+      }
+      if (resizeDirection.includes('s')) {
+        newHeight = Math.max(200, resizeStartSize.current.height + dy);
+      }
+      if (resizeDirection.includes('w')) {
+        newWidth = Math.max(300, resizeStartSize.current.width - dx);
+      }
+      if (resizeDirection.includes('n')) {
+        newHeight = Math.max(200, resizeStartSize.current.height - dy);
+      }
+
+      onResize(group.id, { width: newWidth, height: newHeight });
+    };
+
+    const handleResizeEnd = () => {
+      setIsResizing(false);
+      setResizeDirection('');
+    };
+
+    if (isResizing) {
+      window.addEventListener('mousemove', handleResizeMove);
+      window.addEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = `${resizeDirection}-resize`;
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleResizeMove);
+      window.removeEventListener('mouseup', handleResizeEnd);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, resizeDirection, onResize, group.id, getZoom]);
 
   return (
     <div
-      className={`${colors.bg} ${colors.border} border-2 rounded-lg shadow-lg overflow-hidden`}
+      className={`${colors.bg} ${colors.border} border-2 rounded-lg shadow-lg overflow-visible transition-shadow hover:shadow-xl`}
       style={{
-        position: 'absolute',
-        left: group.position.x,
-        top: group.position.y,
         minWidth: '300px',
         minHeight: group.collapsed ? '60px' : '200px',
         width: group.dimensions?.width || 400,
         height: group.collapsed ? '60px' : group.dimensions?.height || 300,
-        zIndex: -1, // Behind nodes
+        pointerEvents: 'all',
+        position: 'relative',
       }}
     >
       {/* Header */}
-      <div className={`${colors.headerBg} px-4 py-3 flex items-center justify-between border-b ${colors.border}`}>
+      <div 
+        className={`${colors.headerBg} px-4 py-3 flex items-center justify-between border-b ${colors.border} cursor-move`}
+      >
         <div className="flex items-center space-x-3 flex-1">
           <button
             onClick={() => onToggleCollapse(group.id)}
@@ -108,6 +167,30 @@ export const GroupNode = memo(({ group, onToggleCollapse, onEdit, onDelete }: Gr
             {group.nodeIds.length} component{group.nodeIds.length !== 1 ? 's' : ''}
           </span>
         </div>
+      )}
+
+      {/* Resize handles */}
+      {!group.collapsed && (
+        <>
+          {/* Right edge */}
+          <div
+            className="nodrag absolute top-0 right-0 bottom-0 w-2 cursor-ew-resize hover:bg-blue-400/30 transition-colors"
+            onMouseDown={(e) => handleResizeStart(e, 'e')}
+            style={{ zIndex: 10 }}
+          />
+          {/* Bottom edge */}
+          <div
+            className="nodrag absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize hover:bg-blue-400/30 transition-colors"
+            onMouseDown={(e) => handleResizeStart(e, 's')}
+            style={{ zIndex: 10 }}
+          />
+          {/* Bottom-right corner */}
+          <div
+            className="nodrag absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize hover:bg-blue-500/50 transition-colors rounded-tl"
+            onMouseDown={(e) => handleResizeStart(e, 'se')}
+            style={{ zIndex: 11 }}
+          />
+        </>
       )}
     </div>
   );
