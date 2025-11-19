@@ -20,7 +20,7 @@ import { GroupModal } from '../components/modals/GroupModal';
 import { 
   ArrowLeft, Code, Github, Edit, Database, Globe, 
   Settings, Wrench, Lock, ClipboardCheck, CheckCircle, Workflow as WorkflowIcon,
-  FolderKanban, Trash2, Info, X, Sparkles, TestTube2, Zap
+  FolderKanban, Trash2, Info, X, Sparkles, TestTube2, Zap, FileJson
 } from 'lucide-react';
 import { ElementModal } from '../components/modals/ElementModal';
 import { ManipulatorModal } from '../components/modals/ManipulatorModal';
@@ -741,6 +741,64 @@ function CanvasContent() {
               <span>Generate Code</span>
             </button>
             <button
+              onClick={async () => {
+                if (componentNodes.length === 0) return;
+                try {
+                  // Get project with all components
+                  const project = await projectsApi.get(projectId!);
+                  
+                  // Build schema export
+                  const schemaExport = {
+                    project: {
+                      id: project.id,
+                      name: project.name,
+                      description: project.description,
+                      exportedAt: new Date().toISOString(),
+                    },
+                    components: project.components.map((c: any) => ({
+                      id: c.id,
+                      type: c.type,
+                      name: c.name,
+                      description: c.description,
+                      schema: c.schema,
+                      status: c.status,
+                      locked: c.locked,
+                    })),
+                    canvas: project.canvasData,
+                    metadata: {
+                      totalComponents: project.components.length,
+                      version: '1.0',
+                      generator: 'Worldbuilder',
+                    }
+                  };
+                  
+                  // Download as JSON file
+                  const blob = new Blob([JSON.stringify(schemaExport, null, 2)], { type: 'application/json' });
+                  const url = window.URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  const sanitizedName = projectName
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+                  a.download = `${sanitizedName}-schema.json`;
+                  document.body.appendChild(a);
+                  a.click();
+                  window.URL.revokeObjectURL(url);
+                  document.body.removeChild(a);
+                  
+                  showToast('Schema exported!', 'success');
+                } catch (error: any) {
+                  showToast(error.message || 'Failed to export schema', 'error');
+                }
+              }}
+              disabled={componentNodes.length === 0}
+              className="rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 disabled:opacity-50 disabled:shadow-none transition-all hover:-translate-y-0.5 flex items-center space-x-2"
+            >
+              <FileJson className="w-4 h-4" />
+              <span>Export Schema</span>
+            </button>
+            <button
               onClick={() => setShowGitHubPush(true)}
               disabled={componentNodes.length === 0}
               className="rounded-xl bg-gradient-to-r from-gray-900 to-gray-800 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-gray-900/30 hover:shadow-xl hover:shadow-gray-900/40 disabled:opacity-50 disabled:shadow-none transition-all hover:-translate-y-0.5 flex items-center space-x-2"
@@ -1113,6 +1171,63 @@ function CanvasContent() {
                 <div className="flex-1">
                   <div className="text-sm font-bold text-blue-900">Generate Code</div>
                   <div className="text-xs text-blue-600">Preview & download</div>
+                </div>
+              </button>
+              <button
+                onClick={async () => {
+                  if (componentNodes.length === 0) return;
+                  try {
+                    const project = await projectsApi.get(projectId!);
+                    const schemaExport = {
+                      project: {
+                        id: project.id,
+                        name: project.name,
+                        description: project.description,
+                        exportedAt: new Date().toISOString(),
+                      },
+                      components: project.components.map((c: any) => ({
+                        id: c.id,
+                        type: c.type,
+                        name: c.name,
+                        description: c.description,
+                        schema: c.schema,
+                        status: c.status,
+                        locked: c.locked,
+                      })),
+                      canvas: project.canvasData,
+                      metadata: {
+                        totalComponents: project.components.length,
+                        version: '1.0',
+                        generator: 'Worldbuilder',
+                      }
+                    };
+                    const blob = new Blob([JSON.stringify(schemaExport, null, 2)], { type: 'application/json' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const sanitizedName = projectName
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, '-')
+                      .replace(/^-+|-+$/g, '');
+                    a.download = `${sanitizedName}-schema.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    showToast('Schema exported!', 'success');
+                  } catch (error: any) {
+                    showToast(error.message || 'Failed to export schema', 'error');
+                  }
+                }}
+                disabled={componentNodes.length === 0}
+                className="w-full rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 p-4 text-left hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-3 transition-all group"
+              >
+                <div className="p-2 rounded-lg bg-purple-500 text-white group-hover:scale-110 transition-transform">
+                  <FileJson className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-purple-900">Export Schema</div>
+                  <div className="text-xs text-purple-600">Download JSON</div>
                 </div>
               </button>
               <button
