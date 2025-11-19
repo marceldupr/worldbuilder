@@ -16,7 +16,7 @@ const CreateComponentSchema = z.object({
 });
 
 // POST /api/components - Create component
-router.post('/', async (req: AuthRequest, res) => {
+router.post('/', async (req: AuthRequest, res): Promise<void> => {
   try {
     console.log('[Components] Creating component:', req.body);
     const data = CreateComponentSchema.parse(req.body);
@@ -32,13 +32,19 @@ router.post('/', async (req: AuthRequest, res) => {
 
     if (!project) {
       console.log('[Components] ❌ Project not found:', data.projectId);
-      return res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: 'Project not found' });
+      return;
     }
 
     console.log('[Components] Project verified, creating component...');
     const component = await prisma.component.create({
       data: {
-        ...data,
+        projectId: data.projectId,
+        type: data.type,
+        name: data.name,
+        description: data.description,
+        schema: data.schema,
+        position: data.position,
         status: 'ready',
       },
     });
@@ -48,7 +54,8 @@ router.post('/', async (req: AuthRequest, res) => {
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       console.error('[Components] Validation error:', error.errors);
-      return res.status(400).json({ error: error.errors });
+      res.status(400).json({ error: error.errors });
+      return;
     }
     console.error('[Components] ❌ Error creating component:');
     console.error('Error name:', error.name);
@@ -64,7 +71,7 @@ router.post('/', async (req: AuthRequest, res) => {
 });
 
 // GET /api/components/:id - Get component
-router.get('/:id', async (req: AuthRequest, res) => {
+router.get('/:id', async (req: AuthRequest, res): Promise<void> => {
   try {
     console.log('[Components] GET component:', req.params.id);
     const component = await prisma.component.findFirst({
@@ -74,7 +81,8 @@ router.get('/:id', async (req: AuthRequest, res) => {
 
     if (!component || component.project.userId !== req.user!.id) {
       console.log('[Components] ❌ Component not found or unauthorized');
-      return res.status(404).json({ error: 'Component not found' });
+      res.status(404).json({ error: 'Component not found' });
+      return;
     }
 
     console.log('[Components] ✅ Component found:', component.name);
@@ -86,7 +94,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 });
 
 // PATCH /api/components/:id - Update component
-router.patch('/:id', async (req: AuthRequest, res) => {
+router.patch('/:id', async (req: AuthRequest, res): Promise<void> => {
   try {
     console.log('[Components] PATCH component:', req.params.id);
     console.log('[Components] Update data:', JSON.stringify(req.body, null, 2));
@@ -98,7 +106,8 @@ router.patch('/:id', async (req: AuthRequest, res) => {
 
     if (!component || component.project.userId !== req.user!.id) {
       console.log('[Components] ❌ Component not found or unauthorized');
-      return res.status(404).json({ error: 'Component not found' });
+      res.status(404).json({ error: 'Component not found' });
+      return;
     }
 
     const updated = await prisma.component.update({
@@ -120,7 +129,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
 });
 
 // POST /api/components/:id/lock - Lock component tests
-router.post('/:id/lock', async (req: AuthRequest, res) => {
+router.post('/:id/lock', async (req: AuthRequest, res): Promise<void> => {
   try {
     console.log('[Components] Locking component tests:', req.params.id);
     
@@ -131,7 +140,8 @@ router.post('/:id/lock', async (req: AuthRequest, res) => {
 
     if (!component || component.project.userId !== req.user!.id) {
       console.log('[Components] ❌ Component not found or unauthorized');
-      return res.status(404).json({ error: 'Component not found' });
+      res.status(404).json({ error: 'Component not found' });
+      return;
     }
 
     // Update component to locked
@@ -170,7 +180,7 @@ router.post('/:id/lock', async (req: AuthRequest, res) => {
 });
 
 // POST /api/components/:id/unlock - Unlock component tests
-router.post('/:id/unlock', async (req: AuthRequest, res) => {
+router.post('/:id/unlock', async (req: AuthRequest, res): Promise<void> => {
   try {
     console.log('[Components] Unlocking component tests:', req.params.id);
     
@@ -181,7 +191,8 @@ router.post('/:id/unlock', async (req: AuthRequest, res) => {
 
     if (!component || component.project.userId !== req.user!.id) {
       console.log('[Components] ❌ Component not found or unauthorized');
-      return res.status(404).json({ error: 'Component not found' });
+      res.status(404).json({ error: 'Component not found' });
+      return;
     }
 
     // Update component to unlocked
@@ -207,7 +218,7 @@ router.post('/:id/unlock', async (req: AuthRequest, res) => {
 });
 
 // GET /api/components/:id/tests - Get locked tests for component
-router.get('/:id/tests', async (req: AuthRequest, res) => {
+router.get('/:id/tests', async (req: AuthRequest, res): Promise<void> => {
   try {
     const component = await prisma.component.findFirst({
       where: { id: req.params.id },
@@ -218,7 +229,8 @@ router.get('/:id/tests', async (req: AuthRequest, res) => {
     });
 
     if (!component || component.project.userId !== req.user!.id) {
-      return res.status(404).json({ error: 'Component not found' });
+      res.status(404).json({ error: 'Component not found' });
+      return;
     }
 
     res.json({ 
@@ -232,7 +244,7 @@ router.get('/:id/tests', async (req: AuthRequest, res) => {
 });
 
 // DELETE /api/components/:id - Delete component
-router.delete('/:id', async (req: AuthRequest, res) => {
+router.delete('/:id', async (req: AuthRequest, res): Promise<void> => {
   try {
     const component = await prisma.component.findFirst({
       where: { id: req.params.id },
@@ -240,7 +252,8 @@ router.delete('/:id', async (req: AuthRequest, res) => {
     });
 
     if (!component || component.project.userId !== req.user!.id) {
-      return res.status(404).json({ error: 'Component not found' });
+      res.status(404).json({ error: 'Component not found' });
+      return;
     }
 
     await prisma.component.delete({

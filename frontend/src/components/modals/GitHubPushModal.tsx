@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { deployApi } from '../../lib/api';
 import { showToast } from '../ui/toast';
-import { Github, X, Loader2, Upload } from 'lucide-react';
+import { X, Loader2, Upload } from 'lucide-react';
 
 interface GitHubPushModalProps {
   projectId: string;

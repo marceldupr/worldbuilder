@@ -17,7 +17,7 @@ const PushToGitHubSchema = z.object({
 });
 
 // POST /api/deploy/github - Push code to GitHub
-router.post('/github', async (req: AuthRequest, res) => {
+router.post('/github', async (req: AuthRequest, res): Promise<void> => {
   try {
     const { projectId, repoName, isPrivate, githubToken } = PushToGitHubSchema.parse(req.body);
 
@@ -30,7 +30,8 @@ router.post('/github', async (req: AuthRequest, res) => {
     });
 
     if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: 'Project not found' });
+      return;
     }
 
     // Initialize GitHub service
@@ -88,7 +89,7 @@ router.post('/github', async (req: AuthRequest, res) => {
 });
 
 // POST /api/deploy/railway - Deploy to Railway
-router.post('/railway', async (req: AuthRequest, res) => {
+router.post('/railway', async (_req: AuthRequest, res): Promise<void> => {
   try {
     // TODO: Implement Railway integration
     res.json({ message: 'Railway deployment coming soon' });

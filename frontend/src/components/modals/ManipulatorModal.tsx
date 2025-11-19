@@ -173,31 +173,36 @@ export function ManipulatorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl ring-1 ring-gray-900/5">
-        <div className="mb-6">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
-                <Globe className="w-6 h-6" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="flex flex-col w-full max-w-3xl h-[90vh] rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden">
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/30">
+                <Globe className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900">
-                Create Data API
-              </h2>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Create Data API
+                </h2>
+                <p className="text-sm text-gray-600 mt-0.5">
+                  Create a REST API to expose your Element data through HTTP endpoints.
+                </p>
+              </div>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-xl transition-all"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
             </button>
           </div>
-          <p className="text-sm text-gray-600 leading-relaxed">
-            Create a REST API to expose your Element data through HTTP endpoints.
-          </p>
         </div>
 
-        <div className="space-y-6">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-8 py-6">
+          <div className="space-y-6">
           {/* API Name */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -408,32 +413,36 @@ export function ManipulatorModal({
               ))}
             </div>
           </div>
+          </div>
         </div>
 
-        <div className="mt-8 flex justify-end space-x-3">
-          <button
-            onClick={onClose}
-            className="rounded-xl bg-gray-100 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleCreate}
-            disabled={loading || !name.trim() || !linkedElement}
-            className="rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 disabled:opacity-50 transition-all hover:-translate-y-0.5 flex items-center space-x-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Creating...</span>
-              </>
-            ) : (
-              <>
-                <Check className="w-4 h-4" />
-                <span>Create API</span>
-              </>
-            )}
-          </button>
+        {/* Fixed Footer */}
+        <div className="flex-shrink-0 border-t border-gray-200 bg-gray-50 px-8 py-5">
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={onClose}
+              className="rounded-xl bg-white border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCreate}
+              disabled={loading || !name.trim() || !linkedElement}
+              className="rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/40 disabled:opacity-50 disabled:shadow-none transition-all hover:-translate-y-0.5 flex items-center space-x-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Creating...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Create API</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

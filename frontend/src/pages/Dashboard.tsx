@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { projectsApi } from '../lib/api';
 import { showToast, Toaster } from '../components/ui/toast';
+import { ConfirmModal } from '../components/modals/ConfirmModal';
 import { Plus, Trash2, Package, Loader2 } from 'lucide-react';
 
 interface Project {
@@ -23,6 +24,10 @@ export function Dashboard() {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDescription, setNewProjectDescription] = useState('');
   const [creating, setCreating] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
     loadProjects();
@@ -61,16 +66,22 @@ export function Dashboard() {
     }
   };
 
-  const deleteProject = async (id: string, e: React.MouseEvent) => {
+  const deleteProject = (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this project?')) return;
+    setConfirmDelete({ id, name });
+  };
+
+  const executeDeleteProject = async () => {
+    if (!confirmDelete) return;
 
     try {
-      await projectsApi.delete(id);
-      setProjects(projects.filter((p) => p.id !== id));
-      showToast('Project deleted', 'info');
+      await projectsApi.delete(confirmDelete.id);
+      setProjects(projects.filter((p) => p.id !== confirmDelete.id));
+      showToast('Project deleted', 'success');
+      setConfirmDelete(null);
     } catch (error: any) {
       showToast(error.message || 'Failed to delete project', 'error');
+      setConfirmDelete(null);
     }
   };
 
@@ -216,7 +227,7 @@ export function Dashboard() {
                     </h3>
                   </div>
                   <button
-                    onClick={(e) => deleteProject(project.id, e)}
+                    onClick={(e) => deleteProject(project.id, project.name, e)}
                     className="opacity-0 text-gray-400 hover:text-red-600 group-hover:opacity-100 transition-all rounded-lg p-1.5 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -239,6 +250,19 @@ export function Dashboard() {
           </div>
         )}
       </main>
+
+      {confirmDelete && (
+        <ConfirmModal
+          title={`Delete "${confirmDelete.name}"?`}
+          message="This will permanently delete the project and all its components."
+          details={[confirmDelete.name]}
+          confirmText="Delete Project"
+          cancelText="Cancel"
+          variant="danger"
+          onConfirm={executeDeleteProject}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
     </div>
   );
 }

@@ -8,7 +8,7 @@ const router = Router();
 const codeGenerator = new CodeGeneratorService();
 
 // POST /api/code/generate/:projectId - Generate code for project
-router.post('/generate/:projectId', async (req: AuthRequest, res) => {
+router.post('/generate/:projectId', async (req: AuthRequest, res): Promise<void> => {
   try {
     const { projectId } = req.params;
 
@@ -21,7 +21,8 @@ router.post('/generate/:projectId', async (req: AuthRequest, res) => {
     });
 
     if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: 'Project not found' });
+      return;
     }
 
     // Generate code
@@ -39,7 +40,7 @@ router.post('/generate/:projectId', async (req: AuthRequest, res) => {
 });
 
 // GET /api/code/preview/:projectId - Preview generated code
-router.get('/preview/:projectId', async (req: AuthRequest, res) => {
+router.get('/preview/:projectId', async (req: AuthRequest, res): Promise<void> => {
   try {
     const { projectId } = req.params;
 
@@ -52,7 +53,8 @@ router.get('/preview/:projectId', async (req: AuthRequest, res) => {
     });
 
     if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: 'Project not found' });
+      return;
     }
 
     // Generate code
@@ -67,7 +69,7 @@ router.get('/preview/:projectId', async (req: AuthRequest, res) => {
 });
 
 // GET /api/code/download/:projectId - Download code as ZIP
-router.get('/download/:projectId', async (req: AuthRequest, res) => {
+router.get('/download/:projectId', async (req: AuthRequest, res): Promise<void> => {
   try {
     const { projectId } = req.params;
 
@@ -80,7 +82,8 @@ router.get('/download/:projectId', async (req: AuthRequest, res) => {
     });
 
     if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: 'Project not found' });
+      return;
     }
 
     // Generate code
@@ -115,7 +118,7 @@ router.get('/download/:projectId', async (req: AuthRequest, res) => {
 });
 
 // POST /api/code/finalize/:projectId - AI finalizes all code (removes TODOs)
-router.post('/finalize/:projectId', async (req: AuthRequest, res) => {
+router.post('/finalize/:projectId', async (req: AuthRequest, res): Promise<void> => {
   try {
     const { projectId } = req.params;
 
@@ -131,7 +134,8 @@ router.post('/finalize/:projectId', async (req: AuthRequest, res) => {
     });
 
     if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: 'Project not found' });
+      return;
     }
 
     console.log('[Code] 🪄 AI Finalization started for:', project.name);
