@@ -48,7 +48,7 @@ export async function authMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) {
+): Promise<void> {
   try {
     const authHeader = req.headers.authorization;
 
@@ -57,7 +57,8 @@ export async function authMiddleware(
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('[Auth] ❌ Missing or invalid authorization header');
-      return res.status(401).json({ error: 'Missing or invalid authorization header' });
+      res.status(401).json({ error: 'Missing or invalid authorization header' });
+      return;
     }
 
     const token = authHeader.substring(7);
@@ -70,10 +71,11 @@ export async function authMiddleware(
 
     if (error || !user) {
       console.log('[Auth] ❌ Token validation failed:', error?.message || 'No user found');
-      return res.status(401).json({ 
+      res.status(401).json({ 
         error: 'Invalid or expired token',
         details: error?.message 
       });
+      return;
     }
 
     console.log('[Auth] ✅ User authenticated:', user.email);
@@ -89,7 +91,7 @@ export async function authMiddleware(
     next();
   } catch (error) {
     console.error('[Auth] Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 }
 

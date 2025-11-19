@@ -37,7 +37,7 @@ router.get('/', async (req: AuthRequest, res) => {
 });
 
 // GET /api/projects/:id - Get single project
-router.get('/:id', async (req: AuthRequest, res) => {
+router.get('/:id', async (req: AuthRequest, res): Promise<void> => {
   try {
     const project = await prisma.project.findFirst({
       where: {
@@ -50,7 +50,8 @@ router.get('/:id', async (req: AuthRequest, res) => {
     });
 
     if (!project) {
-      return res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: 'Project not found' });
+      return;
     }
 
     res.json(project);
@@ -61,7 +62,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 });
 
 // POST /api/projects - Create new project
-router.post('/', async (req: AuthRequest, res) => {
+router.post('/', async (req: AuthRequest, res): Promise<void> => {
   try {
     console.log('[Projects] Creating project for user:', req.user!.id);
     console.log('[Projects] Data:', req.body);
@@ -81,7 +82,8 @@ router.post('/', async (req: AuthRequest, res) => {
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       console.error('[Projects] Validation error:', error.errors);
-      return res.status(400).json({ error: error.errors });
+      res.status(400).json({ error: error.errors });
+      return;
     }
     console.error('[Projects] ❌ Error creating project:');
     console.error('Error name:', error.name);
@@ -97,7 +99,7 @@ router.post('/', async (req: AuthRequest, res) => {
 });
 
 // PATCH /api/projects/:id - Update project
-router.patch('/:id', async (req: AuthRequest, res) => {
+router.patch('/:id', async (req: AuthRequest, res): Promise<void> => {
   try {
     const data = UpdateProjectSchema.parse(req.body);
 
@@ -110,7 +112,8 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     });
 
     if (project.count === 0) {
-      return res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: 'Project not found' });
+      return;
     }
 
     const updated = await prisma.project.findUnique({
@@ -120,7 +123,8 @@ router.patch('/:id', async (req: AuthRequest, res) => {
     res.json(updated);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors });
+      res.status(400).json({ error: error.errors });
+      return;
     }
     console.error('Error updating project:', error);
     res.status(500).json({ error: 'Failed to update project' });
@@ -128,7 +132,7 @@ router.patch('/:id', async (req: AuthRequest, res) => {
 });
 
 // DELETE /api/projects/:id - Delete project
-router.delete('/:id', async (req: AuthRequest, res) => {
+router.delete('/:id', async (req: AuthRequest, res): Promise<void> => {
   try {
     const result = await prisma.project.deleteMany({
       where: {
@@ -138,7 +142,8 @@ router.delete('/:id', async (req: AuthRequest, res) => {
     });
 
     if (result.count === 0) {
-      return res.status(404).json({ error: 'Project not found' });
+      res.status(404).json({ error: 'Project not found' });
+      return;
     }
 
     res.status(204).send();

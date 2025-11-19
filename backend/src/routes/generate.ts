@@ -16,7 +16,7 @@ const GenerateSchemaSchema = z.object({
 });
 
 // POST /api/generate/schema - Generate component schema using AI
-router.post('/schema', async (req: AuthRequest, res) => {
+router.post('/schema', async (req: AuthRequest, res): Promise<void> => {
   try {
     console.log('[Generate] Schema generation request:', req.body);
     const data = GenerateSchemaSchema.parse(req.body);
@@ -66,7 +66,8 @@ router.post('/schema', async (req: AuthRequest, res) => {
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       console.error('[Generate] Validation error:', error.errors);
-      return res.status(400).json({ error: error.errors });
+      res.status(400).json({ error: error.errors });
+      return;
     }
     console.error('[Generate] ❌ Error generating schema:');
     console.error('Error name:', error.name);
@@ -202,7 +203,7 @@ Description: ${description}
 }
 
 // POST /api/generate/test-data - Generate test data for component
-router.post('/test-data', async (req: AuthRequest, res) => {
+router.post('/test-data', async (req: AuthRequest, res): Promise<void> => {
   try {
     const { componentId } = z.object({ componentId: z.string().uuid() }).parse(req.body);
     
@@ -215,7 +216,8 @@ router.post('/test-data', async (req: AuthRequest, res) => {
     });
 
     if (!component || component.project.userId !== req.user!.id) {
-      return res.status(404).json({ error: 'Component not found' });
+      res.status(404).json({ error: 'Component not found' });
+      return;
     }
 
     // Generate test data using AI
@@ -257,7 +259,8 @@ Return realistic test data that can be used in unit tests.`;
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       console.error('[Generate] Validation error:', error.errors);
-      return res.status(400).json({ error: error.errors });
+      res.status(400).json({ error: error.errors });
+      return;
     }
     console.error('[Generate] ❌ Error generating test data:', error.message);
     res.status(500).json({ 
