@@ -25,6 +25,8 @@ const nodeStyles: Record<string, {
   border: string;
   text: string;
   accent: string;
+  ring: string;
+  glowColor: string;
   Icon: LucideIcon;
   displayName: string;
 }> = {
@@ -33,6 +35,8 @@ const nodeStyles: Record<string, {
     border: 'border-blue-300/30',
     text: 'text-blue-700',
     accent: 'bg-blue-500',
+    ring: 'ring-blue-400',
+    glowColor: 'rgba(59, 130, 246, 0.5)',
     Icon: Database,
     displayName: 'Element',
   },
@@ -41,6 +45,8 @@ const nodeStyles: Record<string, {
     border: 'border-indigo-300/30',
     text: 'text-indigo-700',
     accent: 'bg-indigo-500',
+    ring: 'ring-indigo-400',
+    glowColor: 'rgba(99, 102, 241, 0.5)',
     Icon: Globe,
     displayName: 'Data API',
   },
@@ -49,6 +55,8 @@ const nodeStyles: Record<string, {
     border: 'border-purple-300/30',
     text: 'text-purple-700',
     accent: 'bg-purple-500',
+    ring: 'ring-purple-400',
+    glowColor: 'rgba(168, 85, 247, 0.5)',
     Icon: Settings,
     displayName: 'Worker',
   },
@@ -57,6 +65,8 @@ const nodeStyles: Record<string, {
     border: 'border-yellow-300/30',
     text: 'text-yellow-700',
     accent: 'bg-yellow-500',
+    ring: 'ring-yellow-400',
+    glowColor: 'rgba(234, 179, 8, 0.5)',
     Icon: Wrench,
     displayName: 'Helper',
   },
@@ -65,6 +75,8 @@ const nodeStyles: Record<string, {
     border: 'border-cyan-300/30',
     text: 'text-cyan-700',
     accent: 'bg-cyan-500',
+    ring: 'ring-cyan-400',
+    glowColor: 'rgba(6, 182, 212, 0.5)',
     Icon: Lock,
     displayName: 'Auth',
   },
@@ -73,6 +85,8 @@ const nodeStyles: Record<string, {
     border: 'border-green-300/30',
     text: 'text-green-700',
     accent: 'bg-green-500',
+    ring: 'ring-green-400',
+    glowColor: 'rgba(34, 197, 94, 0.5)',
     Icon: ClipboardCheck,
     displayName: 'Auditor',
   },
@@ -81,6 +95,8 @@ const nodeStyles: Record<string, {
     border: 'border-red-300/30',
     text: 'text-red-700',
     accent: 'bg-red-500',
+    ring: 'ring-red-400',
+    glowColor: 'rgba(239, 68, 68, 0.5)',
     Icon: CheckCircle,
     displayName: 'Enforcer',
   },
@@ -89,6 +105,8 @@ const nodeStyles: Record<string, {
     border: 'border-pink-300/30',
     text: 'text-pink-700',
     accent: 'bg-pink-500',
+    ring: 'ring-pink-400',
+    glowColor: 'rgba(236, 72, 153, 0.5)',
     Icon: WorkflowIcon,
     displayName: 'Workflow',
   },
@@ -146,20 +164,22 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
       )}
 
       <div
-        className={`rounded-2xl border ${style.border} ${style.bg} backdrop-blur-xl ${
-          selected ? 'ring-2 ring-blue-400/50 ring-offset-0' : ''
-        } ${isSystemComponent ? 'ring-1 ring-purple-300/40' : ''} w-[180px] h-[100px] transition-all hover:shadow-lg relative flex flex-col overflow-hidden`}
+        className={`rounded-2xl border-2 ${
+          selected ? style.border.replace('/30', '') : style.border
+        } ${style.bg} backdrop-blur-xl ${
+          isSystemComponent && !selected ? 'ring-1 ring-purple-300/40' : ''
+        } w-[180px] h-[100px] transition-all hover:shadow-lg relative flex flex-col overflow-hidden`}
         style={{
-          background: selected 
-            ? `linear-gradient(135deg, ${style.bg.replace('bg-', 'rgba(var(--tw-')})20%, rgba(255,255,255,0.9))`
-            : undefined,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)',
+          boxShadow: selected 
+            ? `0 0 0 2px white, 0 0 0 5px ${style.glowColor}, 0 0 20px ${style.glowColor}, 0 20px 60px rgba(0, 0, 0, 0.2)` 
+            : '0 8px 32px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04)',
+          transform: selected ? 'scale(1.08)' : 'scale(1)',
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        {/* Subtle accent line at top */}
-        <div className={`absolute top-0 left-0 right-0 h-[2px] ${style.accent} opacity-40`} />
+        {/* Accent line at top - brighter when selected */}
+        <div className={`absolute top-0 left-0 right-0 h-[3px] ${style.accent} ${selected ? 'opacity-100 shadow-lg' : 'opacity-40'}`} />
         
         <Handle
           type="target"
@@ -170,22 +190,22 @@ export const ComponentNode = memo(({ data, selected }: NodeProps<ComponentNodeDa
         <div className="p-3 flex-1 flex flex-col backdrop-blur-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-1.5">
-              <style.Icon className={`w-4 h-4 ${style.text}`} strokeWidth={2} />
-              <div className={`h-1.5 w-1.5 rounded-full ${statusStyles[status]} shadow-sm`} />
+              <style.Icon className={`${selected ? 'w-5 h-5' : 'w-4 h-4'} ${style.text}`} strokeWidth={selected ? 2.5 : 2} />
+              <div className={`${selected ? 'h-2 w-2' : 'h-1.5 w-1.5'} rounded-full ${statusStyles[status]} shadow-sm`} />
               {data.locked && (
-                <Lock className="w-3 h-3 text-purple-600" />
+                <Lock className={`${selected ? 'w-4 h-4' : 'w-3 h-3'} text-purple-600`} />
               )}
             </div>
-            <span className="rounded-lg bg-white/60 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-gray-600 border border-white/40">
+            <span className={`rounded-lg ${selected ? 'bg-white/90' : 'bg-white/60'} backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-gray-600 border border-white/40 ${selected ? 'shadow-md' : ''}`}>
               {style.displayName}
             </span>
           </div>
 
-          <h3 className={`text-sm font-bold ${style.text} truncate`}>
+          <h3 className={`font-bold ${style.text} truncate ${selected ? 'text-base' : 'text-sm'}`}>
             {data.label}
           </h3>
           
-          <div className="mt-auto text-[10px] text-gray-500 truncate font-medium">
+          <div className={`mt-auto text-[10px] truncate font-medium ${selected ? 'text-gray-700 font-bold' : 'text-gray-500'}`}>
             {data.groupName || '\u00A0'}
           </div>
         </div>

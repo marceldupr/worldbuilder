@@ -120,6 +120,16 @@ function CanvasContent() {
     }
   }, [projectId, loadCanvas, refreshNodeData]);
 
+  // Highlight selected node on canvas
+  useEffect(() => {
+    setComponentNodes((nds: Node[]) =>
+      nds.map((n) => ({
+        ...n,
+        selected: n.id === selectedNodeId,
+      }))
+    );
+  }, [selectedNodeId, setComponentNodes]);
+
   async function loadProjectName() {
     try {
       const project = await projectsApi.get(projectId!);
@@ -864,7 +874,7 @@ function CanvasContent() {
                 <ChevronLeft className="w-3 h-3 text-gray-500 group-hover:text-gray-700 transition-colors" strokeWidth={2.5} />
               </button>
 
-              <div className="p-4">
+              <div className="p-4 overflow-y-auto h-full">
               {/* Magic Mode Buttons */}
               <div className="mb-5 space-y-2">
             <button
@@ -902,6 +912,28 @@ function CanvasContent() {
               </p>
             </button>
           </div>
+
+          {/* Create Group Button */}
+          <button
+            onClick={() => {
+              // Create group at center of canvas
+              setDropPosition({ x: 100, y: 100 });
+              setEditingGroup(null);
+              setShowGroupModal(true);
+            }}
+            className="mb-4 w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 p-3 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 flex items-center space-x-3"
+          >
+            <FolderKanban className="w-5 h-5 text-white" />
+            <div className="flex-1 text-left">
+              <div className="font-bold text-sm text-white">Create Group</div>
+              <div className="text-xs text-white/90">Organize components</div>
+            </div>
+            {groups.length > 0 && (
+              <span className="text-xs font-bold text-amber-900 bg-white/90 px-2.5 py-1 rounded-full">
+                {groups.length}
+              </span>
+            )}
+          </button>
 
           <div className="mb-4 flex items-center justify-between px-1">
             <div>
@@ -1141,7 +1173,16 @@ function CanvasContent() {
             )}
           </div>
 
-          <ComponentStats components={componentNodes.map(n => ({ type: n.data.type }))} />
+          <ComponentStats 
+            components={componentNodes.map(n => ({ 
+              type: n.data.type,
+              id: n.id,
+              label: n.data.label
+            }))}
+            onSelectComponent={(componentId) => {
+              setSelectedNodeId(componentId);
+            }}
+          />
 
           {selectedNodeId && (
             <div className="mt-6">
